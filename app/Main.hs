@@ -51,6 +51,6 @@ run token = do
 -- main = getEnvToken "1042488790:AAFwpFo-_wNm8_AquAIht8RW0XtBIu-2aF0" >>= run
 main :: IO ()
 main = do
-  putStrLn "Please, enter Telegram bot's API token:" --temp_token: 1042488790:AAFwpFo-_wNm8_AquAIht8RW0XtBIu-2aF0
+  putStrLn "Please, enter Telegram bot's API token:" 
   token <- Telegram.Token . Text.pack <$> getLine
   run token
