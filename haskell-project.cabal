@@ -1,0 +1,117 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 5feaa7b53fe6939c3dbf9744b7f3b93b8aea0ac0305d411a77571864d3f48bb4
+
+name:           haskell-project
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/iu-haskell-spring-2020/my-project#readme>
+homepage:       https://github.com/iu-haskell-spring-2020/my-project#readme
+bug-reports:    https://github.com/iu-haskell-spring-2020/my-project/issues
+author:         Haskell Heroes
+maintainer:     someteam@somemail.com
+copyright:      2020 Innopolis University
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/iu-haskell-spring-2020/my-project
+
+library
+  exposed-modules:
+      MyProject
+  other-modules:
+      Paths_haskell_project
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -fno-warn-type-defaults
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , http-api-data
+    , http-client
+    , http-client-tls
+    , mtl
+    , servant-client
+    , telegram-bot-simple
+    , text
+    , time
+  default-language: Haskell2010
+
+executable haskell-project-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_haskell_project
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -fno-warn-type-defaults -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , haskell-project
+    , http-api-data
+    , http-client
+    , http-client-tls
+    , mtl
+    , servant-client
+    , telegram-bot-simple
+    , text
+    , time
+  default-language: Haskell2010
+
+test-suite doctests
+  type: exitcode-stdio-1.0
+  main-is: doctests.hs
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -fno-warn-type-defaults
+  build-depends:
+      Glob
+    , QuickCheck
+    , aeson
+    , base
+    , doctest
+    , http-api-data
+    , http-client
+    , http-client-tls
+    , mtl
+    , servant-client
+    , telegram-bot-simple
+    , template-haskell
+    , text
+    , time
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      MyProjectSpec
+      Paths_haskell_project
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -fno-warn-type-defaults -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      HUnit
+    , QuickCheck
+    , aeson
+    , base >=4.7 && <5
+    , haskell-project
+    , hspec
+    , http-api-data
+    , http-client
+    , http-client-tls
+    , mtl
+    , servant-client
+    , telegram-bot-simple
+    , text
+    , time
+  default-language: Haskell2010
