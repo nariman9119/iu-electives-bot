@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5feaa7b53fe6939c3dbf9744b7f3b93b8aea0ac0305d411a77571864d3f48bb4
+-- hash: f9b4f2fd8df04bdd30fee688910fe5ce948558a9e8fbb4be09c8eda79a70dcf4
 
 name:           haskell-project
 version:        0.1.0.0
@@ -40,6 +40,7 @@ library
     , http-client
     , http-client-tls
     , mtl
+    , servant
     , servant-client
     , telegram-bot-simple
     , text
@@ -49,6 +50,7 @@ library
 executable haskell-project-exe
   main-is: Main.hs
   other-modules:
+      Translate
       Paths_haskell_project
   hs-source-dirs:
       app
@@ -61,6 +63,7 @@ executable haskell-project-exe
     , http-client
     , http-client-tls
     , mtl
+    , servant
     , servant-client
     , telegram-bot-simple
     , text
@@ -83,6 +86,7 @@ test-suite doctests
     , http-client
     , http-client-tls
     , mtl
+    , servant
     , servant-client
     , telegram-bot-simple
     , template-haskell
@@ -110,6 +114,7 @@ test-suite spec
     , http-client
     , http-client-tls
     , mtl
+    , servant
     , servant-client
     , telegram-bot-simple
     , text
