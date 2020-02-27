@@ -60,7 +60,6 @@ bot = BotApp
 
 returnText :: Text -> BotM ()
 returnText message = do
-  let tempo = ((newManager tlsManagerSettings) >>= \mgr -> translate (mgr) (Key "AIzaSyADGQZNRCEcFpy0LQXyiArTj25OYKSUtjk") (Just (Source English)) (Target Russian) (Body message))
   let new_message = translateText message
   reply (toReplyMessage message) 
 
@@ -70,7 +69,7 @@ translateText message = do
   
   Right TranslationResponse { translations = xs } <-
     newManager tlsManagerSettings >>= \mgr ->
-    translate (mgr) (Key "AIzaSyADGQZNRCEcFpy0LQXyiArTj25OYKSUtjk") (Just (Source English)) (Target Russian) (Body message)
+    translate (mgr) (Key "") (Just (Source English)) (Target Russian) (Body message)
   forM xs $ \Translation { translatedText = TranslatedText txt } ->
     return txt
     --writeFile "temp.txt" (convertToString txt)
@@ -121,7 +120,6 @@ main :: IO ()
 main = do
   
   
-  --tempo <- ((newManager tlsManagerSettings) >>= \mgr -> translate (mgr) (Key "") (Just (Source English)) (Target Russian) (Body "work?"))
   
   
   temp <- translateText "please work"
@@ -129,6 +127,4 @@ main = do
   putStrLn "Please, enter Telegram bot's API token:" 
   token <- Telegram.Token . Text.pack <$> getLine
     
-  --translateText "something"
-  --returnText "something"
   run token
