@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | This todo bot can add items, remove them
--- and show a current list of things to do.
+
 module Main where
 
 import           Control.Applicative              ((<|>))
@@ -25,18 +24,26 @@ data Model = Model
 
 data ElectiveCourse = ElectiveCourse { electiveCourseTitle :: Text 
                                      , electiveCourseReminder :: Maybe UTCTime
-                                     --, electiveCourseLecturer :: Text --TODO
-                                     --, electiveCourseRoomNumber :: Text
-                                     --, electiveCourseTime :: Text 
-                             } deriving (Show)  
+                    --               , electiveCourseLecturer :: Text
+                    --               , electiveCourseRoomNumber :: Text
+                    --               , electiveCourseSchedule :: [Text] 
+                             } deriving (Eq, Show)  
 
 initialModel :: IO Model
 initialModel = do
 
   now <- getCurrentTime
   pure Model { electiveCourses = [
-                      ElectiveCourse { electiveCourseTitle = "elective2" , electiveCourseReminder = Nothing }
-                    , ElectiveCourse { electiveCourseTitle = "elective1" , electiveCourseReminder = Nothing}]
+                      ElectiveCourse { electiveCourseTitle = "elective2" , electiveCourseReminder = Nothing
+                   -- , electiveCourseLecturer = "Testoslav Testovich",  electiveCourseRoomNumber = "303"
+                   -- , electiveCourseSchedule = ["31.03.2020 09:00-10:35", "5.04.2020 09:00-10:35", "06.05.2020 09:00-10:35"]
+                     }
+                    
+                    , ElectiveCourse { electiveCourseTitle = "elective1" , electiveCourseReminder = Nothing
+                   -- , electiveCourseLecturer = "Testoveta Testovna",  electiveCourseRoomNumber = "303"
+                   -- , electiveCourseSchedule = ["31.03.2020 09:00-10:35", "5.04.2020 09:00-10:35", "06.05.2020 09:00-10:35"]
+                     }
+                    ]
                     , myElectiveCourses = [],currentTime = now}
 
 
@@ -46,9 +53,17 @@ mkCourse title = ElectiveCourse { electiveCourseTitle = title, electiveCourseRem
 
 
 -- | Add course to user`s list from list of all courses.
-addCourse :: ElectiveCourse -> Model -> Model
-addCourse course model = model { myElectiveCourses = course : myElectiveCourses model }
+isMember :: ElectiveCourse -> [ElectiveCourse] -> Bool
+isMember n [] = False
+isMember n (x:xs)
+    | n == x = True
+    | otherwise = isMember n xs
 
+addCourse :: ElectiveCourse -> Model -> Model
+addCourse course model = do
+    if (isMember course (myElectiveCourses model))
+      then model
+      else model { myElectiveCourses = course : myElectiveCourses model } 
 -- | Ability to remove course from user`s list
 removeCourse :: Text -> Model -> Model
 removeCourse title model = model { myElectiveCourses = filter p (myElectiveCourses model) }
@@ -188,7 +203,7 @@ myCourseActionsKeyboard title = Telegram.InlineKeyboardMarkup
   , [ btnBack ]
   ]
     where
-      btnBack   = actionButton "\x2B05 Back to items list" ShowItems
+      btnBack   = actionButton "\x2B05 Back to course list" ShowItems
       btnRemindIn  = actionButton
         ("Set reminder for next lecture")
         (SetReminderIn 5 title)
@@ -204,7 +219,7 @@ handleUpdate _ = parseUpdate
   <|> RemoveItem  <$> command "remove" 
   <|> Start       <$  command "start"
   <|> callbackQueryDataRead
-  <|> AddItem     <$> text
+-- <|> AddItem     <$> text   no need to handle this action
 
 
   
@@ -217,7 +232,7 @@ handleAction action model = case action of
     SetTime <$> liftIO (threadDelay 1000 >> getCurrentTime)
   -- add course by creating new course from selected one
   AddItem title -> addCourse (mkCourse title) model <# do
-    replyText "Course added to your list"
+    replyText "Course in your list"
     pure NoAction
   -- remove course from list of user`s courses
   RemoveItem title -> removeCourse title model <# do
