@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6d5feb1f27981d1a55919444be20882859c4f275c4ab76e545b0f4e93b97366f
+-- hash: 50617e6784acab3de0581bbb6087f8e09c31500faebdc69216185a917f02e8dd
 
 name:           haskell-project
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Course
       TelegramBot
       Translate
   other-modules:
@@ -36,6 +37,7 @@ library
   ghc-options: -Wall -fno-warn-type-defaults
   build-depends:
       aeson
+    , bytestring
     , base >=4.7 && <5
     , http-api-data
     , http-client

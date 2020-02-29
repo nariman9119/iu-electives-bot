@@ -15,56 +15,46 @@ import qualified Telegram.Bot.API                 as Telegram
 import           Telegram.Bot.Simple
 import           Telegram.Bot.Simple.Debug
 import           Telegram.Bot.Simple.UpdateParser
-
-
+import Course
+import Data.Text as T hiding (concat, map, zip, filter, length, zipWith, null)
 -- | Bot conversation state model.
 data Model = Model
-  { electiveCourses :: [ElectiveCourse] --list of all elective courses
-  , myElectiveCourses :: [ElectiveCourse] --elective courses that user will choose
+  { electiveCourses :: [Course] --list of all elective courses
+  , myElectiveCourses :: [Course] --elective courses that user will choose
   , currentTime :: UTCTime 
   } deriving (Show)
 
 
-data ElectiveCourse = ElectiveCourse { electiveCourseTitle :: Text 
-                                     , electiveCourseReminder :: Maybe UTCTime
-                                     , electiveCourseLecturer :: Text
-                                     , electiveCourseRoomNumber :: Text
-                                     , electiveCourseSchedule :: [Text] 
-                             } deriving (Eq, Show)  
+--data ElectiveCourse = ElectiveCourse { electiveCourseTitle :: Text
+--                                     , electiveCourseReminder :: Maybe UTCTime
+--                                     , electiveCourseLecturer :: Text
+--                                     , electiveCourseRoomNumber :: Text
+--                                     , electiveCourseSchedule :: [Text]
+--                             } deriving (Eq, Show)
 
 initialModel :: IO Model
 initialModel = do
 
   now <- getCurrentTime
-  pure Model { electiveCourses = [
-                      ElectiveCourse { electiveCourseTitle = "elective2" , electiveCourseReminder = Nothing
-                    , electiveCourseLecturer = "Testoslav Testovich",  electiveCourseRoomNumber = "303"
-                    , electiveCourseSchedule = ["31.03.2020 09:00-10:35", "5.04.2020 09:00-10:35", "06.05.2020 09:00-10:35"]
-                     }
-                    
-                    , ElectiveCourse { electiveCourseTitle = "elective1" , electiveCourseReminder = Nothing
-                    , electiveCourseLecturer = "Testoveta Testovna",  electiveCourseRoomNumber = "303"
-                    , electiveCourseSchedule = ["31.03.2020 09:00-10:35", "5.04.2020 09:00-10:35", "06.05.2020 09:00-10:35"]
-                     }
-                    ]
+  pure Model { electiveCourses =  loadCourses
                     , myElectiveCourses = [],currentTime = now}
 
 
-compareCourses:: Text -> ElectiveCourse -> Bool
-compareCourses title course = (electiveCourseTitle course) == title
+compareCourses:: Text -> Course -> Bool
+compareCourses title course = (T.pack $ name course) == title
 -- | Copy course from list of all courses and add it to user`s list
-copyCourse :: Model -> Text -> ElectiveCourse
+copyCourse :: Model -> Text -> Course
 copyCourse model title = (filter (compareCourses title) (electiveCourses model))!!0
 
 -- | Check if course is already in your course list
-isMember :: ElectiveCourse -> [ElectiveCourse] -> Bool
+isMember :: Course -> [Course] -> Bool
 isMember n [] = False
 isMember n (x:xs)
-    | n == x = True
+    | name n == name x = True
     | otherwise = isMember n xs
 
 -- | Add course to user`s list from list of all courses.
-addCourse :: ElectiveCourse -> Model -> Model
+addCourse :: Course -> Model -> Model
 addCourse course model = do
     if (isMember course (myElectiveCourses model))
       then model
@@ -74,7 +64,7 @@ addCourse course model = do
 removeCourse :: Text -> Model -> Model
 removeCourse title model = model { myElectiveCourses = filter p (myElectiveCourses model) }
   where
-    p item = electiveCourseTitle item /= title
+    p item = (T.pack $ name item) /= title
 
 
 -- | Actions bot can perform.
@@ -98,12 +88,7 @@ initBot = do
     { botInitialModel = model
     , botAction = flip handleUpdate
     , botHandler = handleAction
-    , botJobs =
-      [ BotJob
-        { botJobSchedule = "* * * * *"  -- every minute
-        , botJobTask = courseReminder
-        }
-      ]
+    , botJobs = []
     }
 
 
@@ -120,23 +105,23 @@ setReminder title datetime model = model
   { electiveCourses = map updateReminder (electiveCourses model) }
     where
       updateReminder item
-        | title /= electiveCourseTitle item = item
-        | otherwise = item { electiveCourseReminder = Just datetime }
+        | title /= (T.pack $ name item) = item
+        | otherwise = item
 
---TODO reimplement reminder        
-courseReminder :: Model -> Eff Action Model
-courseReminder model = do
-  newItems <- mapM electiveReminder (electiveCourses model)
-  pure model { electiveCourses = newItems }
-  where
-    electiveReminder item =
-      case electiveCourseReminder item of
-        Just alarmTime | alarmTime <= currentTime model -> do
-          eff $ do
-            replyText ("Reminder: " <> electiveCourseTitle item)
-            return NoAction
-          return item { electiveCourseReminder = Nothing }
-        _ -> return item
+----TODO reimplement reminder
+--courseReminder :: Model -> Eff Action Model
+--courseReminder model = do
+--  newItems <- mapM electiveReminder (electiveCourses model)
+--  pure model { electiveCourses = newItems }
+--  where
+--    electiveReminder item =
+--      case electiveCourseReminder item of
+--        Just alarmTime | alarmTime <= currentTime model -> do
+--          eff $ do
+--            replyText ("Reminder: " <> electiveCourseTitle item)
+--            return NoAction
+--          return item
+--        _ -> return item
 
 
 
@@ -171,14 +156,14 @@ myCoursesAsInlineKeyboard model =
           Telegram.SomeInlineKeyboardMarkup (myCoursesInlineKeyboard items)
       }
 
-myCoursesInlineKeyboard :: [ElectiveCourse] -> Telegram.InlineKeyboardMarkup
+myCoursesInlineKeyboard :: [Course] -> Telegram.InlineKeyboardMarkup
 myCoursesInlineKeyboard
   = Telegram.InlineKeyboardMarkup .  map (pure . myCourseInlineKeyboardButton)
 
-myCourseInlineKeyboardButton :: ElectiveCourse -> Telegram.InlineKeyboardButton
-myCourseInlineKeyboardButton item = actionButton title (RevealItemActions title)
+myCourseInlineKeyboardButton :: Course -> Telegram.InlineKeyboardButton
+myCourseInlineKeyboardButton item = actionButton (T.pack $ title) (RevealItemActions (T.pack title))
   where
-    title = electiveCourseTitle item
+    title = name item
 
 
 coursesAsInlineKeyboard :: Model -> EditMessage
@@ -189,14 +174,14 @@ coursesAsInlineKeyboard model =
       { editMessageReplyMarkup = Just $
           Telegram.SomeInlineKeyboardMarkup (coursesInlineKeyboard items)
       }
-coursesInlineKeyboard :: [ElectiveCourse] -> Telegram.InlineKeyboardMarkup
+coursesInlineKeyboard :: [Course] -> Telegram.InlineKeyboardMarkup
 coursesInlineKeyboard
   = Telegram.InlineKeyboardMarkup .  map (pure . courseInlineKeyboardButton)
 
-courseInlineKeyboardButton :: ElectiveCourse -> Telegram.InlineKeyboardButton
-courseInlineKeyboardButton item = actionButton title (AddItem title)
+courseInlineKeyboardButton :: Course -> Telegram.InlineKeyboardButton
+courseInlineKeyboardButton item = actionButton (T.pack title) (AddItem (T.pack title))
   where
-    title = electiveCourseTitle item
+    title = name item
 
 
     
@@ -204,8 +189,7 @@ myCourseActionsMessage :: Model -> Text -> EditMessage
 myCourseActionsMessage model title = do
   let course = copyCourse model title
     in 
-      (toEditMessage (Text.unlines ["«" <> title <> "»", "Course Instructor: " <> (electiveCourseLecturer course) 
-                      ,"Room: " <> (electiveCourseRoomNumber course),  "Schedule" , Text.unlines (electiveCourseSchedule course)]))
+      (toEditMessage (T.pack $ showCourse course))
       { editMessageReplyMarkup = Just $
         Telegram.SomeInlineKeyboardMarkup (myCourseActionsKeyboard title) }
 
