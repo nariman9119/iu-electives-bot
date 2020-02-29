@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f9b4f2fd8df04bdd30fee688910fe5ce948558a9e8fbb4be09c8eda79a70dcf4
+-- hash: 6d5feb1f27981d1a55919444be20882859c4f275c4ab76e545b0f4e93b97366f
 
 name:           haskell-project
 version:        0.1.0.0
@@ -27,7 +27,8 @@ source-repository head
 
 library
   exposed-modules:
-      MyProject
+      TelegramBot
+      Translate
   other-modules:
       Paths_haskell_project
   hs-source-dirs:
@@ -50,7 +51,6 @@ library
 executable haskell-project-exe
   main-is: Main.hs
   other-modules:
-      Translate
       Paths_haskell_project
   hs-source-dirs:
       app
