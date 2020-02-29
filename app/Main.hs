@@ -24,9 +24,9 @@ data Model = Model
 
 data ElectiveCourse = ElectiveCourse { electiveCourseTitle :: Text 
                                      , electiveCourseReminder :: Maybe UTCTime
-                    --               , electiveCourseLecturer :: Text
-                    --               , electiveCourseRoomNumber :: Text
-                    --               , electiveCourseSchedule :: [Text] 
+                                     , electiveCourseLecturer :: Text
+                                     , electiveCourseRoomNumber :: Text
+                                     , electiveCourseSchedule :: [Text] 
                              } deriving (Eq, Show)  
 
 initialModel :: IO Model
@@ -35,42 +35,44 @@ initialModel = do
   now <- getCurrentTime
   pure Model { electiveCourses = [
                       ElectiveCourse { electiveCourseTitle = "elective2" , electiveCourseReminder = Nothing
-                   -- , electiveCourseLecturer = "Testoslav Testovich",  electiveCourseRoomNumber = "303"
-                   -- , electiveCourseSchedule = ["31.03.2020 09:00-10:35", "5.04.2020 09:00-10:35", "06.05.2020 09:00-10:35"]
+                    , electiveCourseLecturer = "Testoslav Testovich",  electiveCourseRoomNumber = "303"
+                    , electiveCourseSchedule = ["31.03.2020 09:00-10:35", "5.04.2020 09:00-10:35", "06.05.2020 09:00-10:35"]
                      }
                     
                     , ElectiveCourse { electiveCourseTitle = "elective1" , electiveCourseReminder = Nothing
-                   -- , electiveCourseLecturer = "Testoveta Testovna",  electiveCourseRoomNumber = "303"
-                   -- , electiveCourseSchedule = ["31.03.2020 09:00-10:35", "5.04.2020 09:00-10:35", "06.05.2020 09:00-10:35"]
+                    , electiveCourseLecturer = "Testoveta Testovna",  electiveCourseRoomNumber = "303"
+                    , electiveCourseSchedule = ["31.03.2020 09:00-10:35", "5.04.2020 09:00-10:35", "06.05.2020 09:00-10:35"]
                      }
                     ]
                     , myElectiveCourses = [],currentTime = now}
 
 
--- Do not provide possibility to add course manually to the list of all courses
-mkCourse :: Text -> ElectiveCourse
-mkCourse title = ElectiveCourse { electiveCourseTitle = title, electiveCourseReminder = Nothing }
+compareCourses:: Text -> ElectiveCourse -> Bool
+compareCourses title course = (electiveCourseTitle course) == title
+-- | Copy course from list of all courses and add it to user`s list
+copyCourse :: Model -> Text -> ElectiveCourse
+copyCourse model title = (filter (compareCourses title) (electiveCourses model))!!0
 
-
--- | Add course to user`s list from list of all courses.
+-- | Check if course is already in your course list
 isMember :: ElectiveCourse -> [ElectiveCourse] -> Bool
 isMember n [] = False
 isMember n (x:xs)
     | n == x = True
     | otherwise = isMember n xs
 
+-- | Add course to user`s list from list of all courses.
 addCourse :: ElectiveCourse -> Model -> Model
 addCourse course model = do
     if (isMember course (myElectiveCourses model))
       then model
       else model { myElectiveCourses = course : myElectiveCourses model } 
+
 -- | Ability to remove course from user`s list
 removeCourse :: Text -> Model -> Model
 removeCourse title model = model { myElectiveCourses = filter p (myElectiveCourses model) }
   where
     p item = electiveCourseTitle item /= title
 
---TODO restrict possibility to add same course many times.
 
 -- | Actions bot can perform.
 data Action
@@ -230,8 +232,9 @@ handleAction action model = case action of
   -- TODO reimplement reminder
   SetTime t -> model { currentTime = t } <# do
     SetTime <$> liftIO (threadDelay 1000 >> getCurrentTime)
+  
   -- add course by creating new course from selected one
-  AddItem title -> addCourse (mkCourse title) model <# do
+  AddItem title -> addCourse (copyCourse model title) model <# do
     replyText "Course in your list"
     pure NoAction
   -- remove course from list of user`s courses
