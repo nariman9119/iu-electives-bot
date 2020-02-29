@@ -194,10 +194,14 @@ courseInlineKeyboardButton item = actionButton title (AddItem title)
 
 
     
-myCourseActionsMessage :: Text -> EditMessage
-myCourseActionsMessage title = (toEditMessage (Text.unlines ["«" <> title <> "»", "Course Instructor: Test Testovich", "Next Lecture: 30.02.2020 09:00"]))
-  { editMessageReplyMarkup = Just $
-      Telegram.SomeInlineKeyboardMarkup (myCourseActionsKeyboard title) }
+myCourseActionsMessage :: Model -> Text -> EditMessage
+myCourseActionsMessage model title = do
+  let course = copyCourse model title
+    in 
+      (toEditMessage (Text.unlines ["«" <> title <> "»", "Course Instructor: " <> (electiveCourseLecturer course) 
+                      ,"Room: " <> (electiveCourseRoomNumber course),  "Schedule" , Text.unlines (electiveCourseSchedule course)]))
+      { editMessageReplyMarkup = Just $
+        Telegram.SomeInlineKeyboardMarkup (myCourseActionsKeyboard title) }
 
 myCourseActionsKeyboard :: Text -> Telegram.InlineKeyboardMarkup
 myCourseActionsKeyboard title = Telegram.InlineKeyboardMarkup
@@ -261,7 +265,7 @@ handleAction action model = case action of
     pure model
 -- show actions from course that was selected on user`s list
   RevealItemActions title -> model <# do
-    editUpdateMessage (myCourseActionsMessage title)
+    editUpdateMessage (myCourseActionsMessage model title)
     pure NoAction
 --TODO reimplement reminder
   SetReminderIn minutes title -> setReminderIn minutes title model <# do
