@@ -41,6 +41,7 @@ dependencies:
 - text
 - time
 - servant
+- bytestring
 
 
 library:

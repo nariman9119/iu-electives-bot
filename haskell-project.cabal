@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 50617e6784acab3de0581bbb6087f8e09c31500faebdc69216185a917f02e8dd
+-- hash: cb38c4042334f7f01e7b721a4ab3dddd736769a8ae3a5bda6962dc25208276b7
 
 name:           haskell-project
 version:        0.1.0.0
@@ -37,8 +37,8 @@ library
   ghc-options: -Wall -fno-warn-type-defaults
   build-depends:
       aeson
-    , bytestring
     , base >=4.7 && <5
+    , bytestring
     , http-api-data
     , http-client
     , http-client-tls
@@ -60,6 +60,7 @@ executable haskell-project-exe
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
     , haskell-project
     , http-api-data
     , http-client
@@ -83,6 +84,7 @@ test-suite doctests
     , QuickCheck
     , aeson
     , base
+    , bytestring
     , doctest
     , http-api-data
     , http-client
@@ -110,6 +112,7 @@ test-suite spec
     , QuickCheck
     , aeson
     , base >=4.7 && <5
+    , bytestring
     , haskell-project
     , hspec
     , http-api-data
