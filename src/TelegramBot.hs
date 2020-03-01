@@ -78,6 +78,7 @@ data Action
   | SetTime UTCTime         -- ^ Update current time.
   | RevealItemActions Text  -- ^ Update list of items to display item actions.
   | SetReminderIn Int Text  -- ^ Set a reminder for an item in a given amount of minutes from now.
+  | WeekCourses
   deriving (Show, Read)
 
 -- | Bot application.
@@ -130,7 +131,8 @@ startMessage = Text.unlines
  [ "Welcome to Elective course schedule"
  , "/start - show list of all possible courses"
  , "/show - show list of selected courses"
- , "/remove - remove course from list of selected courses"]
+ , "/remove - remove course from list of selected courses"
+ , "/show_week - show courses on this week"]
 
 
  -- | A start keyboard with commands to start with.
@@ -184,11 +186,11 @@ courseInlineKeyboardButton item = actionButton (T.pack title) (AddItem (T.pack t
     title = name item
 
 
-    
+
 myCourseActionsMessage :: Model -> Text -> EditMessage
 myCourseActionsMessage model title = do
   let course = copyCourse model title
-    in 
+    in
       (toEditMessage (T.pack $ showCourse course))
       { editMessageReplyMarkup = Just $
         Telegram.SomeInlineKeyboardMarkup (myCourseActionsKeyboard title) }
@@ -206,19 +208,41 @@ myCourseActionsKeyboard title = Telegram.InlineKeyboardMarkup
 
 
 
-      
+
 -- | How to process incoming 'Telegram.Update's
 -- and turn them into 'Action's.
 handleUpdate :: Model -> Telegram.Update -> Maybe Action
 handleUpdate _ = parseUpdate
     $ ShowItems   <$  command "show"
-  <|> RemoveItem  <$> command "remove" 
+  <|> RemoveItem  <$> command "remove"
   <|> Start       <$  command "start"
+  <|> WeekCourses <$  command "show_week"
   <|> callbackQueryDataRead
 -- <|> AddItem     <$> text   no need to handle this action
 
 
-  
+weekLecturesAsInlineKeyboard :: Model -> EditMessage
+weekLecturesAsInlineKeyboard model =
+  case courses of
+    [] -> "You don't have lectures on this week"
+    items ->
+      (toEditMessage "List of courses")
+        {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (weekLecturesInlineKeyboard items)}
+  where
+    courses = thisWeekSchedule day (myElectiveCourses model)
+    day = utctDay (currentTime model)
+
+
+weekLecturesInlineKeyboard :: [Course] -> Telegram.InlineKeyboardMarkup
+weekLecturesInlineKeyboard
+  = Telegram.InlineKeyboardMarkup .  map (pure . weekLecturesInlineKeyboardButton)
+
+weekLecturesInlineKeyboardButton :: Course -> Telegram.InlineKeyboardButton
+weekLecturesInlineKeyboardButton item = actionButton course (AddItem course)
+  where
+    course = T.pack $ name item
+
+
 -- | How to handle 'Action's.
 handleAction :: Action -> Model -> Eff Action Model
 handleAction action model = case action of
@@ -226,14 +250,14 @@ handleAction action model = case action of
   -- TODO reimplement reminder
   SetTime t -> model { currentTime = t } <# do
     SetTime <$> liftIO (threadDelay 1000 >> getCurrentTime)
-  
+
   -- add course by creating new course from selected one
   AddItem title -> addCourse (copyCourse model title) model <# do
     replyText "Course in your list"
     pure NoAction
   -- remove course from list of user`s courses
   RemoveItem title -> removeCourse title model <# do
-    replyText ("Course " <> title <> " removed from your list") 
+    replyText ("Course " <> title <> " removed from your list")
     pure ShowItems
   -- show list of your courses
   ShowItems -> model <# do
@@ -243,6 +267,11 @@ handleAction action model = case action of
   ShowAllCourses -> model <# do
     replyOrEdit (coursesAsInlineKeyboard model)
     pure NoAction
+
+  WeekCourses -> model <# do
+      replyOrEdit (weekLecturesAsInlineKeyboard model)
+      pure NoAction
+
   -- start telegram bot 
   Start -> do
     eff $ do
