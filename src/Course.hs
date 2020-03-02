@@ -8,10 +8,12 @@ import GHC.Generics
 import Data.Time.Clock
 import Data.Aeson
 import Data.Time.Calendar
-import Data.Text as T hiding (concat, map, zip, filter, length, zipWith, null)
+import Data.Text as T hiding (concat, map, zip, filter, length, zipWith, null, intercalate)
 import Control.Applicative
 import Control.Monad
 import Data.Maybe
+import Data.List
+
 --import Control.Monad.Trans.Maybe
 import GHC.Exts
 
@@ -67,13 +69,21 @@ instance ToJSON Course where
 localTimeDayFromUTC:: UTCTime -> TimeZone -> Day
 localTimeDayFromUTC utct tz = localDay $ utcToLocalTime tz utct
 
-showLecture :: (Int, Lecture) -> String
-showLecture (i, Lecture {lecTime=lecTime, room=room}) = show i ++ " Lecture:\nSTART: " ++
-    show (startTime lecTime) ++ "\nEND: " ++ show (endTime lecTime) ++   "\nROOM:" ++ show room ++ "\n"
+showLectureTime::LectureTime-> TimeZone->String
+showLectureTime lecTime tz = intercalate "-" $ map showTime  [startTime lecTime, endTime lecTime]
+    where
+        localTime time = localTimeOfDay $ utcToLocalTime tz time
+        showTime time = intercalate ":" $ map show  [todHour $ localTime time, todMin $ localTime time]
 
-showCourse :: Course -> String
-showCourse Course {name=name, lectures=lectures}= name ++ "\n" ++
-    concat(zipWith (curry showLecture) [1 ..] lectures)
+showLecture :: Lecture -> TimeZone -> String
+showLecture Lecture {lecTime=lecTime, room=room} tz  = "WHEN: " ++ (showLectureTime lecTime tz)
+    ++   "\nWHERE:" ++ show room ++ "\n"
+
+showCourse :: Course -> TimeZone -> String
+showCourse Course {name=name, lectures=lectures} tz = name ++ "\n" ++
+    concat( map showLectureInTimeZone lectures)
+    where
+        showLectureInTimeZone lec = showLecture lec tz
 
 thisDayCourseLectures:: Day -> Course-> [Lecture]  -- local day
 thisDayCourseLectures localday Course {name=name, lectures=lectures} =

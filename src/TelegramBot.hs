@@ -158,7 +158,7 @@ courseInlineKeyboardButton item = actionButton (T.pack title) (AddItem (T.pack t
 myCourseActionsMessage :: Model -> Text -> EditMessage
 myCourseActionsMessage model title = do
   let course = copyCourse model title
-   in (toEditMessage (T.pack $ showCourse course))
+   in (toEditMessage (T.pack $ showCourse course (timeZone model)))
         {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (myCourseActionsKeyboard title)}
 
 myCourseActionsKeyboard :: Text -> Telegram.InlineKeyboardMarkup
