@@ -12,6 +12,8 @@ import           Data.Text                        (Text)
 import           Data.Text                        as T hiding (concat, filter,
                                                         length, map, null, zip,
                                                         zipWith)
+
+import Data.Maybe
 import qualified Data.Text                        as Text
 import           Data.Time
 import qualified Telegram.Bot.API                 as Telegram
@@ -39,7 +41,8 @@ data Model =
 initialModel :: IO Model
 initialModel = do
   now <- getCurrentTime
-  pure Model {electiveCourses = loadCourses, myElectiveCourses = [], reminders = [], currentTime = now}
+  allCourses <- loadCourses
+  pure Model {electiveCourses = catMaybes allCourses, myElectiveCourses = [], reminders = [], currentTime = now}
 
 compareCourses :: Text -> Course -> Bool
 compareCourses title course = (T.pack $ name course) == title
