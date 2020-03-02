@@ -86,6 +86,7 @@ data Action
   | SetReminderIn Text -- ^ Set a reminder for an item in a given amount of minutes from now.
   | ShowReminder Text
   | WeekCourses
+  | ShowTime Text Text Text
   deriving (Show, Read)
 
 -- | Bot application.
@@ -206,7 +207,7 @@ weekLecturesInlineKeyboard :: [Course] -> Telegram.InlineKeyboardMarkup
 weekLecturesInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . weekLecturesInlineKeyboardButton)
 
 weekLecturesInlineKeyboardButton :: Course -> Telegram.InlineKeyboardButton
-weekLecturesInlineKeyboardButton item = actionButton course (AddItem course)
+weekLecturesInlineKeyboardButton item = actionButton course (ShowTime (T.pack (name item)) (T.pack (timeToStr(startTime(lecTime((lectures item)!!0))))) (T.pack (show (room((lectures item)!!0)))))
   where
     course = T.pack $ name item
 
@@ -234,6 +235,9 @@ handleAction action model =
       removeCourse title model <# do
         replyText ("Course " <> title <> " removed from your list")
         pure ShowItems
+    ShowTime title time room -> model <# do
+      replyText (append(append(append(append title (T.pack " - "))time) (T.pack " - "))room) 
+      pure NoAction
   -- show list of your courses
     ShowItems ->
       model <# do
