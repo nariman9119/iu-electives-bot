@@ -34,6 +34,7 @@ data Model =
     { electiveCourses   :: [Course] --list of all elective courses
     , myElectiveCourses :: [Course] --elective courses that user will choose
     , currentTime       :: UTCTime
+    , timeZone          :: TimeZone
     , reminders         :: [Reminder]
     }
   deriving (Show)
@@ -41,8 +42,9 @@ data Model =
 initialModel :: IO Model
 initialModel = do
   now <- getCurrentTime
+  tz  <-  getCurrentTimeZone
   allCourses <- loadCourses
-  pure Model {electiveCourses = catMaybes allCourses, myElectiveCourses = [], reminders = [], currentTime = now}
+  pure Model {electiveCourses = catMaybes allCourses, myElectiveCourses = [], reminders = [], currentTime = now, timeZone = tz}
 
 compareCourses :: Text -> Course -> Bool
 compareCourses title course = (T.pack $ name course) == title
@@ -196,8 +198,9 @@ weekLecturesAsInlineKeyboard model =
       (toEditMessage "List of courses")
         {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (weekLecturesInlineKeyboard items)}
   where
-    courses = thisWeekSchedule day (myElectiveCourses model)
-    day = utctDay (currentTime model)
+    courses = thisWeekSchedule (day, tz) (myElectiveCourses model)
+    tz = timeZone model
+    day = localTimeDayFromUTC (currentTime model) tz
 
 weekLecturesInlineKeyboard :: [Course] -> Telegram.InlineKeyboardMarkup
 weekLecturesInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . weekLecturesInlineKeyboardButton)

@@ -64,6 +64,8 @@ instance FromJSON Course where
 
 instance ToJSON Course where
 
+localTimeDayFromUTC:: UTCTime -> TimeZone -> Day
+localTimeDayFromUTC utct tz = localDay $ utcToLocalTime tz utct
 
 showLecture :: (Int, Lecture) -> String
 showLecture (i, Lecture {lecTime=lecTime, room=room}) = show i ++ " Lecture:\nSTART: " ++
@@ -73,9 +75,9 @@ showCourse :: Course -> String
 showCourse Course {name=name, lectures=lectures}= name ++ "\n" ++
     concat(zipWith (curry showLecture) [1 ..] lectures)
 
-thisDayCourseLectures:: Day -> Course-> [Lecture]
-thisDayCourseLectures day Course {name=name, lectures=lectures} =
-    filter ( \lec-> utctDay (startTime $ lecTime lec) == day) lectures
+thisDayCourseLectures:: Day -> Course-> [Lecture]  -- local day
+thisDayCourseLectures localday Course {name=name, lectures=lectures} =
+    filter ( \lec-> utctDay (startTime $ lecTime lec) == localday) lectures
 
 thisDaySchedule:: Day -> [Course] ->[Course]
 thisDaySchedule day courses = filter (not . null . lectures) todayCourses
@@ -91,15 +93,15 @@ daysOnSameWeek day1 day2 = diff >= 0 && diff < 7
     diffBetweenWeekStart = -(toInteger week_day - 1)
     (_, week_day) = mondayStartWeek day1
 
-thisWeekCourseLectures:: Day -> Course -> [Lecture]
-thisWeekCourseLectures day Course {name=name, lectures=lectures} =
-    filter ( \lec-> daysOnSameWeek (utctDay (startTime $ lecTime lec)) day) lectures
+thisWeekCourseLectures:: (Day, TimeZone) -> Course -> [Lecture]
+thisWeekCourseLectures (day, tz) Course {name=name, lectures=lectures} =
+    filter ( \lec-> daysOnSameWeek (localTimeDayFromUTC (startTime $ lecTime lec) tz) day) lectures
 
-thisWeekSchedule:: Day -> [Course] -> [Course]
-thisWeekSchedule day courses = filter (not . null . lectures) thisWeekCourses
+thisWeekSchedule:: (Day, TimeZone) -> [Course] -> [Course]
+thisWeekSchedule timezonedDay courses = filter (not . null . lectures) thisWeekCourses
     where
         thisWeekCourses =  map (\course ->
-            Course {name =name course, lectures = thisWeekCourseLectures day course}) courses
+            Course {name =name course, lectures = thisWeekCourseLectures timezonedDay course}) courses
 
 
 loadCourse:: String-> IO (Maybe Course)
