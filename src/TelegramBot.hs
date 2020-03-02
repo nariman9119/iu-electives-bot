@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module TelegramBot 
+module TelegramBot
         (
         run
         )where
@@ -8,20 +8,29 @@ module TelegramBot
 import           Control.Applicative              ((<|>))
 import           Control.Concurrent               (threadDelay)
 import           Control.Monad.Trans              (liftIO)
+import           Course
 import           Data.Text                        (Text)
+import           Data.Text                        as T hiding (concat, filter,
+                                                        length, map, null, zip,
+                                                        zipWith)
 import qualified Data.Text                        as Text
 import           Data.Time
 import qualified Telegram.Bot.API                 as Telegram
 import           Telegram.Bot.Simple
 import           Telegram.Bot.Simple.Debug
 import           Telegram.Bot.Simple.UpdateParser
-import Course
-import Data.Text as T hiding (concat, map, zip, filter, length, zipWith, null)
+
+data Reminder = Reminder {
+  reminderTitle :: Text,
+  reminderTime  :: UTCTime
+} deriving (Show)
+
 -- | Bot conversation state model.
 data Model = Model
-  { electiveCourses :: [Course] --list of all elective courses
+  { electiveCourses   :: [Course] --list of all elective courses
   , myElectiveCourses :: [Course] --elective courses that user will choose
-  , currentTime :: UTCTime 
+  , currentTime       :: UTCTime
+  , reminders         :: [Reminder]
   } deriving (Show)
 
 
@@ -36,8 +45,12 @@ initialModel :: IO Model
 initialModel = do
 
   now <- getCurrentTime
-  pure Model { electiveCourses =  loadCourses
-                    , myElectiveCourses = [],currentTime = now}
+  pure Model {
+    electiveCourses =  loadCourses,
+    myElectiveCourses = [],
+    reminders = [],
+    currentTime = now
+   }
 
 
 compareCourses:: Text -> Course -> Bool
@@ -58,7 +71,7 @@ addCourse :: Course -> Model -> Model
 addCourse course model = do
     if (isMember course (myElectiveCourses model))
       then model
-      else model { myElectiveCourses = course : myElectiveCourses model } 
+      else model { myElectiveCourses = course : myElectiveCourses model }
 
 -- | Ability to remove course from user`s list
 removeCourse :: Text -> Model -> Model
@@ -77,7 +90,8 @@ data Action
   | Start                   -- ^ Display start message.
   | SetTime UTCTime         -- ^ Update current time.
   | RevealItemActions Text  -- ^ Update list of items to display item actions.
-  | SetReminderIn Int Text  -- ^ Set a reminder for an item in a given amount of minutes from now.
+  | SetReminderIn Text  -- ^ Set a reminder for an item in a given amount of minutes from now.
+  | ShowReminder Text
   deriving (Show, Read)
 
 -- | Bot application.
@@ -91,22 +105,44 @@ initBot = do
     , botJobs = []
     }
 
-
---TODO reimplement reminder
-setReminderIn :: Int -> Text -> Model -> Model
-setReminderIn minutes title model = setReminder title alarmTime model
+findCourse :: Text -> Model -> Course
+findCourse title model =
+  (filter equalsItem (myElectiveCourses model))!!0
   where
-    now = currentTime model
-    alarmTime = addUTCTime (fromIntegral (60 * minutes)) now
+    equalsItem item = (T.pack $ name item) == title
+
+extractTime :: Course -> [UTCTime]
+extractTime course =
+  map (\lecture -> startTime $ lecTime lecture) (lectures course)
+
+createReminder :: [UTCTime] -> Text -> Model -> Model
+createReminder times title model =
+  model {reminders = (reminders model) ++ newReminders}
+  where
+    newReminders = map (\timeStart -> Reminder { reminderTitle = title, reminderTime = timeStart}) times
+
+setReminderIn :: Text -> Model -> Model
+setReminderIn title model =
+  createReminder startTimes title model
+  where
+    course = findCourse title model
+    startTimes = extractTime course
+
+--showReminder :: Text -> Model -> Model
+--showReminder title model =
+--  createReminder startTimes title model
+--  where
+--    course = findCourse title model
+--    startTimes = extractTime course
 --TODO reimplement reminder
 -- | Set an absolute alarm time for an item with a given title.
-setReminder :: Text -> UTCTime -> Model -> Model
-setReminder title datetime model = model
-  { electiveCourses = map updateReminder (electiveCourses model) }
-    where
-      updateReminder item
-        | title /= (T.pack $ name item) = item
-        | otherwise = item
+--setReminder :: Text -> UTCTime -> Model -> Model
+--setReminder title datetime model = model
+--  { electiveCourses = map updateReminder (electiveCourses model) }
+--    where
+--      updateReminder item
+--        | title /= (T.pack $ name item) = item
+--        | otherwise = item
 
 ----TODO reimplement reminder
 --courseReminder :: Model -> Eff Action Model
@@ -184,11 +220,11 @@ courseInlineKeyboardButton item = actionButton (T.pack title) (AddItem (T.pack t
     title = name item
 
 
-    
+
 myCourseActionsMessage :: Model -> Text -> EditMessage
 myCourseActionsMessage model title = do
   let course = copyCourse model title
-    in 
+    in
       (toEditMessage (T.pack $ showCourse course))
       { editMessageReplyMarkup = Just $
         Telegram.SomeInlineKeyboardMarkup (myCourseActionsKeyboard title) }
@@ -197,28 +233,48 @@ myCourseActionsKeyboard :: Text -> Telegram.InlineKeyboardMarkup
 myCourseActionsKeyboard title = Telegram.InlineKeyboardMarkup
   [ [ btnRemindIn ]
   , [ btnBack ]
+  , [btnReminders]
   ]
     where
+      btnReminders = actionButton
+        ("Show all reminders")
+        (ShowReminder title)
       btnBack   = actionButton "\x2B05 Back to course list" ShowItems
       btnRemindIn  = actionButton
-        ("Set reminder for next lecture")
-        (SetReminderIn 5 title)
+        ("Set reminder")
+        (SetReminderIn title)
 
 
 
-      
+
 -- | How to process incoming 'Telegram.Update's
 -- and turn them into 'Action's.
 handleUpdate :: Model -> Telegram.Update -> Maybe Action
 handleUpdate _ = parseUpdate
     $ ShowItems   <$  command "show"
-  <|> RemoveItem  <$> command "remove" 
+  <|> RemoveItem  <$> command "remove"
   <|> Start       <$  command "start"
   <|> callbackQueryDataRead
 -- <|> AddItem     <$> text   no need to handle this action
 
+remindersAsInlineKeyboard :: Model -> Text -> EditMessage
+remindersAsInlineKeyboard model course =
+  case reminders model of
+    [] -> "The list of reminders is not yet available"
+    items -> (toEditMessage "List of reminders")
+      { editMessageReplyMarkup = Just $
+          Telegram.SomeInlineKeyboardMarkup (remindersInlineKeyboard (filter (\i -> reminderTitle i == course) items))
+      }
 
-  
+remindersInlineKeyboard :: [Reminder] -> Telegram.InlineKeyboardMarkup
+remindersInlineKeyboard
+  = Telegram.InlineKeyboardMarkup .  map (pure . reminderInlineKeyboardButton)
+
+reminderInlineKeyboardButton :: Reminder -> Telegram.InlineKeyboardButton
+reminderInlineKeyboardButton item = actionButton time (AddItem time)
+  where
+    time = T.pack $ timeToStr $ reminderTime item
+
 -- | How to handle 'Action's.
 handleAction :: Action -> Model -> Eff Action Model
 handleAction action model = case action of
@@ -226,14 +282,14 @@ handleAction action model = case action of
   -- TODO reimplement reminder
   SetTime t -> model { currentTime = t } <# do
     SetTime <$> liftIO (threadDelay 1000 >> getCurrentTime)
-  
+
   -- add course by creating new course from selected one
   AddItem title -> addCourse (copyCourse model title) model <# do
     replyText "Course in your list"
     pure NoAction
   -- remove course from list of user`s courses
   RemoveItem title -> removeCourse title model <# do
-    replyText ("Course " <> title <> " removed from your list") 
+    replyText ("Course " <> title <> " removed from your list")
     pure ShowItems
   -- show list of your courses
   ShowItems -> model <# do
@@ -243,7 +299,7 @@ handleAction action model = case action of
   ShowAllCourses -> model <# do
     replyOrEdit (coursesAsInlineKeyboard model)
     pure NoAction
-  -- start telegram bot 
+  -- start telegram bot
   Start -> do
     eff $ do
       reply (toReplyMessage startMessage)
@@ -258,9 +314,12 @@ handleAction action model = case action of
     editUpdateMessage (myCourseActionsMessage model title)
     pure NoAction
 --TODO reimplement reminder
-  SetReminderIn minutes title -> setReminderIn minutes title model <# do
+  SetReminderIn title -> setReminderIn title model <# do
     replyText "Ok, I will remind you."
     pure NoAction
+  ShowReminder title -> model <# do
+      replyOrEdit (remindersAsInlineKeyboard model title)
+      pure NoAction
 
 run :: Telegram.Token -> IO ()
 run token = do
