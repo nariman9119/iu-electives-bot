@@ -8,7 +8,7 @@ import GHC.Generics
 import Data.Time.Clock
 import Data.Aeson
 import Data.Time.Calendar
-import Data.Text as T hiding (concat, map, zip, filter, length, zipWith, null, intercalate)
+import Data.Text as T hiding (concat, map, zip, filter, length, zipWith, null, intercalate, drop)
 import Control.Applicative
 import Control.Monad
 import Data.Maybe
@@ -70,7 +70,7 @@ localTimeDayFromUTC:: UTCTime -> TimeZone -> Day
 localTimeDayFromUTC utct tz = localDay $ utcToLocalTime tz utct
 
 showLectureTime::LectureTime-> TimeZone->String
-showLectureTime lecTime tz = (show $ localDay $ utcToLocalTime tz $ startTime lecTime)  ++ (intercalate "-" $ map showTime  [startTime lecTime, endTime lecTime])
+showLectureTime lecTime tz = (drop 5 $ show $ localDay $ utcToLocalTime tz $ startTime lecTime) ++ " " ++ (intercalate "-" $ map showTime  [startTime lecTime, endTime lecTime])
     where
         localTime time = localTimeOfDay $ utcToLocalTime tz time
         showTime time = intercalate ":" $ map show  [todHour $ localTime time, todMin $ localTime time]
