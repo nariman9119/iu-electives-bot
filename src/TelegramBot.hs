@@ -11,7 +11,7 @@ import           Course
 import           Data.Text                        (Text)
 import           Data.Text                        as T hiding (concat, filter,
                                                         length, map, null, zip,
-                                                        zipWith)
+                                                        zipWith, take)
 
 import Data.Maybe
 import qualified Data.Text                        as Text
@@ -214,7 +214,7 @@ weekLecturesInlineKeyboardButton day tz item = actionButton courseName (ShowTime
   where
     courseName = T.pack $ name item
     lecs = (thisWeekCourseLectures (day, tz) item)
-    lectureStr = T.pack ("\n" ++ concat( map showLectureInTimeZone lecs))
+    lectureStr = T.pack ("\n" ++ concat( map showLectureInTimeZone $ take 1 lecs))
     showLectureInTimeZone l = showLecture l tz
 
 remindersInlineKeyboard :: [Reminder] -> Telegram.InlineKeyboardMarkup
