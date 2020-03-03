@@ -21,6 +21,10 @@ import           Telegram.Bot.Simple
 import           Telegram.Bot.Simple.Debug
 import           Telegram.Bot.Simple.UpdateParser
 
+
+import Data.List (sortBy)
+import Data.Ord (comparing)
+
 data Reminder =
   Reminder
     { reminderTitle :: Text
@@ -240,7 +244,7 @@ handleAction action model =
         replyText ("Course " <> title <> " removed from your list")
         pure ShowItems
     ShowTime title time room -> model <# do
-      replyText (append(append(append(append title (T.pack " - "))time) (T.pack " - "))room) 
+      replyText (append(append(append(append title (T.pack " - "))time) (T.pack " - "))room)
       pure NoAction
   -- show list of your courses
     ShowItems ->
