@@ -197,19 +197,19 @@ weekLecturesAsInlineKeyboard model =
     [] -> "You don't have lectures on this week"
     items ->
       (toEditMessage "List of courses")
-        {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (weekLecturesInlineKeyboard items tz)}
+        {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (weekLecturesInlineKeyboard tz items)}
   where
     courses = thisWeekSchedule (day, tz) (myElectiveCourses model)
     tz = timeZone model
     day = localTimeDayFromUTC (currentTime model) tz
 
-weekLecturesInlineKeyboard :: [Course] -> TimeZone-> Telegram.InlineKeyboardMarkup
-weekLecturesInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . weekLecturesInlineKeyboardButtonTZ)
+weekLecturesInlineKeyboard :: TimeZone -> [Course] -> Telegram.InlineKeyboardMarkup
+weekLecturesInlineKeyboard tz = Telegram.InlineKeyboardMarkup . map (pure . weekLecturesInlineKeyboardButtonTZ)
     where
-        weekLecturesInlineKeyboardButtonTZ course = weekLecturesInlineKeyboardButton course tz
+        weekLecturesInlineKeyboardButtonTZ course = weekLecturesInlineKeyboardButton tz course
 
-weekLecturesInlineKeyboardButton :: Course -> TimeZone -> Telegram.InlineKeyboardButton
-weekLecturesInlineKeyboardButton item tz = actionButton courseName lectureStr
+weekLecturesInlineKeyboardButton :: TimeZone -> Course -> Telegram.InlineKeyboardButton
+weekLecturesInlineKeyboardButton tz item = actionButton courseName lectureStr
   where
     courseName = T.pack $ name item
     lec = (lectures item) !! 0

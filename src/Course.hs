@@ -70,7 +70,7 @@ localTimeDayFromUTC:: UTCTime -> TimeZone -> Day
 localTimeDayFromUTC utct tz = localDay $ utcToLocalTime tz utct
 
 showLectureTime::LectureTime-> TimeZone->String
-showLectureTime lecTime tz = intercalate "-" $ map showTime  [startTime lecTime, endTime lecTime]
+showLectureTime lecTime tz = (show $ localDay $ utcToLocalTime tz $ startTime lecTime)  ++ (intercalate "-" $ map showTime  [startTime lecTime, endTime lecTime])
     where
         localTime time = localTimeOfDay $ utcToLocalTime tz time
         showTime time = intercalate ":" $ map show  [todHour $ localTime time, todMin $ localTime time]
