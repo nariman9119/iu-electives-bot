@@ -21,6 +21,10 @@ import           Telegram.Bot.Simple
 import           Telegram.Bot.Simple.Debug
 import           Telegram.Bot.Simple.UpdateParser
 
+
+import Data.List (sortBy)
+import Data.Ord (comparing)
+
 data Reminder =
   Reminder
     { reminderTitle :: Text
@@ -197,23 +201,27 @@ weekLecturesAsInlineKeyboard model =
     [] -> "You don't have lectures on this week"
     items ->
       (toEditMessage "List of courses")
-        {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (weekLecturesInlineKeyboard items tz)}
+        {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (weekLecturesInlineKeyboard items)}
   where
-    courses = thisWeekSchedule (day, tz) (myElectiveCourses model)
-    tz = timeZone model
-    day = localTimeDayFromUTC (currentTime model) tz
+    courses = (myElectiveCourses model)
+  --  tz = timeZone model
+  --  day = localTimeDayFromUTC (currentTime model) tz
 
-weekLecturesInlineKeyboard :: [Course] -> TimeZone-> Telegram.InlineKeyboardMarkup
+weekLecturesInlineKeyboard :: [Course] -> Telegram.InlineKeyboardMarkup
 weekLecturesInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . weekLecturesInlineKeyboardButtonTZ)
     where
-        weekLecturesInlineKeyboardButtonTZ course = weekLecturesInlineKeyboardButton course tz
+        weekLecturesInlineKeyboardButtonTZ course = weekLecturesInlineKeyboardButton course
 
-weekLecturesInlineKeyboardButton :: Course -> TimeZone -> Telegram.InlineKeyboardButton
-weekLecturesInlineKeyboardButton item tz = actionButton courseName lectureStr
+weekLecturesInlineKeyboardButton :: Course -> Telegram.InlineKeyboardButton
+weekLecturesInlineKeyboardButton item = actionButton courseName (ShowTime courseName time roomlec)
   where
     courseName = T.pack $ name item
-    lec = (lectures item) !! 0
-    lectureStr = showLecture lec tz
+    lecture = (lectures item) !! 0 --TODO feature for sorting lectures and return closest one
+    time = T.pack (timeToStr(startTime(lecTime lecture))) 
+    roomlec = T.pack (show(room lecture))
+
+
+
 
 remindersInlineKeyboard :: [Reminder] -> Telegram.InlineKeyboardMarkup
 remindersInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . reminderInlineKeyboardButton)
@@ -240,7 +248,7 @@ handleAction action model =
         replyText ("Course " <> title <> " removed from your list")
         pure ShowItems
     ShowTime title time room -> model <# do
-      replyText (append(append(append(append title (T.pack " - "))time) (T.pack " - "))room) 
+      replyText (append(append(append(append title (T.pack " - "))time) (T.pack " - "))room)
       pure NoAction
   -- show list of your courses
     ShowItems ->
