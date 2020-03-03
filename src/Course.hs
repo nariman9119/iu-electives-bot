@@ -76,8 +76,8 @@ showLectureTime lecTime tz = (drop 5 $ show $ localDay $ utcToLocalTime tz $ sta
         showTime time = intercalate ":" $ map show  [todHour $ localTime time, todMin $ localTime time]
 
 showLecture :: Lecture -> TimeZone -> String
-showLecture Lecture {lecTime=lecTime, room=room} tz  = "WHEN: " ++ (showLectureTime lecTime tz)
-    ++   "\nWHERE:" ++ show room ++ "\n"
+showLecture Lecture {lecTime=lecTime, room=room} tz  = "\x1F55B " ++ (showLectureTime lecTime tz)
+    ++   "\n\x1F6AA" ++ show room ++ "\n"
 
 showCourse :: Course -> TimeZone -> String
 showCourse Course {name=name, lectures=lectures} tz = name ++ "\n" ++

@@ -213,8 +213,9 @@ weekLecturesInlineKeyboardButton :: Day -> TimeZone -> Course -> Telegram.Inline
 weekLecturesInlineKeyboardButton day tz item = actionButton courseName (ShowTime courseName lectureStr) 
   where
     courseName = T.pack $ name item
-    lec = (thisWeekCourseLectures (day, tz) item)!!0
-    lectureStr = T.pack (showLecture lec tz)
+    lecs = (thisWeekCourseLectures (day, tz) item)
+    lectureStr = T.pack ("\n" ++ concat( map showLectureInTimeZone lecs))
+    showLectureInTimeZone l = showLecture l tz
 
 remindersInlineKeyboard :: [Reminder] -> Telegram.InlineKeyboardMarkup
 remindersInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . reminderInlineKeyboardButton)
