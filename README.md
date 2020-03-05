@@ -23,7 +23,10 @@ Enter telegram bot token
 ### Authors
 
 Kamilya Timchenko
+
 Elizabeth Batanina
+
 Anton Timchenko
+
 Daniyar Nariman
 
