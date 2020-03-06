@@ -28,5 +28,5 @@ Elizabeth Batanina
 
 Anton Timchenko
 
-Daniyar Nariman
+Nariman Daniyar
 
