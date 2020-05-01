@@ -42,7 +42,8 @@ dependencies:
 - time
 - servant
 - bytestring
-
+- hashable
+- unordered-containers
 
 library:
   source-dirs: src

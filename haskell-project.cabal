@@ -48,6 +48,8 @@ library
     , telegram-bot-simple
     , text
     , time
+    , hashable
+    , unordered-containers
   default-language: Haskell2010
 
 executable haskell-project-exe

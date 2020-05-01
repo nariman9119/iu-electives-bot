@@ -1,8 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections   #-}
+
 module TelegramBot
   ( run
   ) where
+
+import           Data.Bifunctor
+import           Data.Hashable              (Hashable)
+import           Data.HashMap.Strict        (HashMap)
+import qualified Data.HashMap.Strict        as HashMap
+
 
 import           Control.Applicative              ((<|>))
 import           Control.Concurrent               (threadDelay)
@@ -20,6 +29,7 @@ import qualified Telegram.Bot.API                 as Telegram
 import           Telegram.Bot.Simple
 import           Telegram.Bot.Simple.Debug
 import           Telegram.Bot.Simple.UpdateParser
+import           Telegram.Bot.Simple.Conversation
 
 
 data Reminder =
@@ -91,10 +101,13 @@ data Action
   deriving (Show, Read)
 
 -- | Bot application.
-initBot :: IO (BotApp Model Action)
+initBot :: IO  (BotApp
+                  (HashMap (Maybe Telegram.ChatId) Model)
+                  (Maybe Telegram.ChatId, Action))
 initBot = do
   model <- initialModel
-  pure BotApp {botInitialModel = model, botAction = flip handleUpdate, botHandler = handleAction, botJobs = []}
+  let someBot  = BotApp {botInitialModel = model, botAction = flip handleUpdate, botHandler = handleAction, botJobs = []}
+  pure (conversationBot Telegram.updateChatId  someBot)
 
 findCourse :: Text -> Model -> Course
 findCourse title model = (filter equalsItem (myElectiveCourses model)) !! 0
