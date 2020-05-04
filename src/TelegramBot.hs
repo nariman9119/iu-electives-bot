@@ -94,6 +94,7 @@ setReminder title datetime model = addReminder  (ToRemindLecture {toRemindTitle 
 -- | Remind user of things to do (if there are any).
 todoReminder :: Model -> Eff Action Model
 todoReminder model = do
+  eff $ SetTime <$> liftIO getCurrentTime
   newItems <- mapM itemReminder (remindLectures model)
   pure model { remindLectures = newItems }
   where
