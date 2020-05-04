@@ -127,9 +127,6 @@ loadCourses = mapM loadCourse coursesStr
 compareCourses :: Text -> Course -> Bool
 compareCourses title course = (T.pack $ name course) == title
 
--- | Copy course from list of all courses and add it to user`s list
-
-
 -- | Check if course is already in your course list
 isMember :: Course -> [Course] -> Bool
 isMember n [] = False

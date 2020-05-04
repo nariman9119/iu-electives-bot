@@ -280,7 +280,7 @@ weekLecturesInlineKeyboardButton day tz item = actionButton courseName (ShowTime
   where
     courseName = T.pack $ name item
     lecs = (thisWeekCourseLectures (day, tz) item)
-    lectureStr = T.pack ("\n" ++ concat( map showLectureInTimeZone $ take 1 lecs))
+    lectureStr = T.intercalate "\n" ( map (T.pack . showLectureInTimeZone ) $ take 1 lecs) -- TODO need fix
     showLectureInTimeZone l = showLecture l tz
 
 remindersInlineKeyboard :: [ToRemindLecture] -> Telegram.InlineKeyboardMarkup
