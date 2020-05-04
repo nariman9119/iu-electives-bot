@@ -42,7 +42,9 @@ dependencies:
 - time
 - servant
 - bytestring
-
+- hashable
+- unordered-containers
+- lens
 
 library:
   source-dirs: src
