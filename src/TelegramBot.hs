@@ -43,25 +43,51 @@ data Model =
     }
   deriving (Show)
 
-  -- | An item in a todo list.
+  -- | An item in a reminder list.
 data ToRemindLecture = ToRemindLecture
   { toRemindTitle    :: Text            -- ^ Item title.
   , lecReminder :: Maybe UTCTime   -- ^ Optional notification time.
   } deriving (Show)
 
 
--- | Create a new todo item with just a title.
+-- | Actions bot can perform.
+data Action
+  = NoAction -- ^ Perform no action.
+  | AddItem Text -- ^ Add a new todo item.
+  | RemoveItem Text -- ^ Remove an item by its title.
+  | ShowItems -- ^ Display all items (either with a new message or by updating existing one).
+  | ShowAllCourses
+  | Start -- ^ Display start message.
+  | SetTime UTCTime -- ^ Update current time.
+  | RevealItemActions Text -- ^ Update list of items to display item actions.
+  | SetReminderIn Text -- ^ Set a reminder for an item in a given amount of minutes from now.
+  | ShowReminder Text
+  | WeekCourses
+  | ShowTime Text Text
+  deriving (Show, Read)
+
+
+initialModel :: IO Model
+initialModel = do
+  now <- getCurrentTime
+  tz  <-  getCurrentTimeZone
+  allCourses <- loadCourses
+  pure Model {electiveCourses = catMaybes allCourses, myElectiveCourses = [], currentTime = now, timeZone = tz, remindLectures = []}
+
+
+
+-- | Create a new lecture reminder item with just a title.
 mkToRemindLecture :: Text -> ToRemindLecture
 mkToRemindLecture title = ToRemindLecture
   { toRemindTitle    = title
   , lecReminder = Nothing
   }
 
--- | Add a new reminder lecture to todo list.
+-- | Add a new reminder lecture to remind list.
 addReminder :: ToRemindLecture-> Model -> Model
 addReminder item model = model { remindLectures = item : remindLectures model }
 
--- | Remove an item from todo list
+-- | Remove an item from remind list
 removeLecReminder:: Text -> Model -> Model
 removeLecReminder title model = model { remindLectures = filter p (remindLectures model) }
   where
@@ -91,10 +117,10 @@ setCourseReminderIn (Just course) model = setLecturesReminder (T.pack $ name cou
 setReminder :: Text -> UTCTime -> Model -> Model
 setReminder title datetime model = addReminder  (ToRemindLecture {toRemindTitle = title, lecReminder = Just datetime}) model
 
--- | Remind user of things to do (if there are any).
-todoReminder :: Model -> Eff Action Model
-todoReminder model = do
-  eff $ SetTime <$> liftIO getCurrentTime
+-- | Remind user of lectures in regular bot job.
+lectureReminder :: Model -> Eff Action Model
+lectureReminder model = do
+  eff $ SetTime <$> liftIO getCurrentTime  -- updates current model time
   newItems <- mapM itemReminder (remindLectures model)
   pure model { remindLectures = newItems }
   where
@@ -107,36 +133,19 @@ todoReminder model = do
           return item { lecReminder = Nothing }
         _ -> return item
 
--- | Actions bot can perform.
-data Action
-  = NoAction -- ^ Perform no action.
-  | AddItem Text -- ^ Add a new todo item.
-  | RemoveItem Text -- ^ Remove an item by its title.
-  | ShowItems -- ^ Display all items (either with a new message or by updating existing one).
-  | ShowAllCourses
-  | Start -- ^ Display start message.
-  | SetTime UTCTime -- ^ Update current time.
-  | RevealItemActions Text -- ^ Update list of items to display item actions.
-  | SetReminderIn Text -- ^ Set a reminder for an item in a given amount of minutes from now.
-  | ShowReminder Text
-  | WeekCourses
-  | ShowTime Text Text
-  deriving (Show, Read)
-
-
-initialModel :: IO Model
-initialModel = do
-  now <- getCurrentTime
-  tz  <-  getCurrentTimeZone
-  allCourses <- loadCourses
-  pure Model {electiveCourses = catMaybes allCourses, myElectiveCourses = [], currentTime = now, timeZone = tz, remindLectures = []}
+-- Sets reminder on all course lectures.
+setReminderIn :: Text -> Model -> Model
+setReminderIn title model = setCourseReminderIn course model
+  where
+    course = findCourse title model
 
 -- | Add course to user`s list from list of all courses.
-addCourse :: Course -> Model -> Model
-addCourse course model = do
+addCourse :: Maybe Course -> Model -> Model
+addCourse (Just course) model = do
   if (isMember course (myElectiveCourses model))
     then model
     else model {myElectiveCourses = course : myElectiveCourses model}
+addCourse Nothing model = model
 
 -- | Ability to remove course from user`s list
 removeCourse :: Text -> Model -> Model
@@ -145,9 +154,8 @@ removeCourse title model = model {myElectiveCourses = filter p (myElectiveCourse
     p item = (T.pack $ name item) /= title
 
 
--- TODO make it to Maybe Course
-copyCourse :: Model -> Text -> Course
-copyCourse model title = (filter (compareCourses title) (electiveCourses model)) !! 0
+copyCourse :: Model -> Text -> Maybe Course
+copyCourse model title = (filter (compareCourses title) (electiveCourses model)) ^? element 0
 
 findCourse :: Text -> Model -> Maybe Course
 findCourse title model = (filter equalsItem (myElectiveCourses model))  ^? element 0
@@ -162,20 +170,13 @@ initBot :: IO  (BotApp
 initBot = do
   model <- initialModel
   let botjobs = [BotJob {botJobSchedule =  "* * * * *" -- every minute
-                     ,  botJobTask = todoReminder
+                     ,  botJobTask = lectureReminder
                      }
                  ]
   let someBot  = BotApp {botInitialModel = model, botAction = flip handleUpdate, botHandler = handleAction, botJobs = botjobs}
   pure (conversationBot Telegram.updateChatId  someBot)
 
 
-
-
-
-setReminderIn :: Text -> Model -> Model
-setReminderIn title model = setCourseReminderIn course model
-  where
-    course = findCourse title model
 
 startMessage :: Text
 startMessage =
@@ -222,8 +223,10 @@ courseInlineKeyboardButton item = actionButton (T.pack title) (AddItem (T.pack t
 myCourseActionsMessage :: Model -> Text -> EditMessage
 myCourseActionsMessage model title = do
   let course = copyCourse model title
-   in (toEditMessage (T.pack $ showCourse course (timeZone model)))
-        {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (myCourseActionsKeyboard title)}
+  case course of
+    Just course -> (toEditMessage (T.pack $ showCourse course (timeZone model)))
+                        {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (myCourseActionsKeyboard title)}
+    Nothing -> "Nothing to show :("
 
 myCourseActionsKeyboard :: Text -> Telegram.InlineKeyboardMarkup
 myCourseActionsKeyboard title = Telegram.InlineKeyboardMarkup [[btnRemindIn], [btnBack], [btnReminders]]
