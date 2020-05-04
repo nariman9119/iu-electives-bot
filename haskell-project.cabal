@@ -50,6 +50,7 @@ library
     , time
     , hashable
     , unordered-containers
+    , lens
   default-language: Haskell2010
 
 executable haskell-project-exe

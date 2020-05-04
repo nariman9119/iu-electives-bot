@@ -123,3 +123,20 @@ loadCourses::IO [(Maybe Course)]
 loadCourses = mapM loadCourse coursesStr
     where
         coursesStr = ["CV_Course.json", "Devops_Course.json", "Haskell_Course.json", "Virtualization_Course.json"]
+
+compareCourses :: Text -> Course -> Bool
+compareCourses title course = (T.pack $ name course) == title
+
+-- | Copy course from list of all courses and add it to user`s list
+
+
+-- | Check if course is already in your course list
+isMember :: Course -> [Course] -> Bool
+isMember n [] = False
+isMember n (x:xs)
+  | name n == name x = True
+  | otherwise = isMember n xs
+
+
+extractTime :: Course -> [UTCTime]
+extractTime course = map (\lecture -> startTime $ lecTime lecture) (lectures course)
