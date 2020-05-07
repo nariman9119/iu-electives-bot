@@ -40,6 +40,7 @@ data Model =
     , currentTime       :: UTCTime
     , timeZone          :: TimeZone
     , remindLectures    :: [ToRemindLecture]
+    , toDoDescription   :: [Text]
     }
   deriving (Show)
 
@@ -64,6 +65,9 @@ data Action
   | ShowReminder Text
   | WeekCourses
   | ShowTime Text Text
+  | AddToDo Text
+  | ShowToDo Text
+  | RemoveToDo Text
   deriving (Show, Read)
 
 
@@ -72,7 +76,7 @@ initialModel = do
   now <- getCurrentTime
   tz  <-  getCurrentTimeZone
   allCourses <- loadCourses
-  pure Model {electiveCourses = catMaybes allCourses, myElectiveCourses = [], currentTime = now, timeZone = tz, remindLectures = []}
+  pure Model {electiveCourses = catMaybes allCourses, myElectiveCourses = [], currentTime = now, timeZone = tz, remindLectures = [], toDoDescription = []}
 
 
 
@@ -147,6 +151,33 @@ addCourse (Just course) model = do
     else model {myElectiveCourses = course : myElectiveCourses model}
 addCourse Nothing model = model
 
+
+
+addToDo :: Text -> Model -> Model
+addToDo item model = model
+  { toDoDescription = item : toDoDescription model }
+
+removeToDo :: Text -> Model -> Model
+removeToDo title model = model {toDoDescription = filter p (toDoDescription model)}
+  where
+    p item = item /= title
+
+
+toDoAsInlineKeyboard :: Model -> EditMessage
+toDoAsInlineKeyboard model =
+  case toDoDescription model of
+    [] -> "The list of todo is not yet available"
+    items ->
+      (toEditMessage "List of available todo items")
+        {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (toDoInlineKeyboard items)}
+
+toDoInlineKeyboard :: [Text] -> Telegram.InlineKeyboardMarkup
+toDoInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . toDoInlineKeyboardButton)
+
+toDoInlineKeyboardButton :: Text -> Telegram.InlineKeyboardButton
+toDoInlineKeyboardButton item = actionButton (item) (NoAction)
+
+
 -- | Ability to remove course from user`s list
 removeCourse :: Text -> Model -> Model
 removeCourse title model = model {myElectiveCourses = filter p (myElectiveCourses model)}
@@ -184,7 +215,8 @@ startMessage =
     [ "Welcome to Elective course schedule"
     , "/start - show list of all possible courses"
     , "/show - show list of selected courses"
-    , "/remove - remove course from list of selected courses"
+    , "/remove_course - remove course from list of selected courses"
+    , "/remove_todo - remove todo item from list of todo items"
     , "/show_week - show courses on this week"
     ]
 
@@ -229,22 +261,28 @@ myCourseActionsMessage model title = do
     Nothing -> "Nothing to show :("
 
 myCourseActionsKeyboard :: Text -> Telegram.InlineKeyboardMarkup
-myCourseActionsKeyboard title = Telegram.InlineKeyboardMarkup [[btnRemindIn], [btnBack], [btnReminders]]
+myCourseActionsKeyboard title = Telegram.InlineKeyboardMarkup [[btnRemindIn], [btnBack], [btnReminders], [btnToDo]]
   where
     btnReminders = actionButton ("Show all reminders") (ShowReminder title)
     btnBack = actionButton "\x2B05 Back to course list" ShowItems
     btnRemindIn = actionButton ("Set reminder") (SetReminderIn title)
+    btnToDo = actionButton ("ToDo") (ShowToDo title)
+
 
 -- | How to process incoming 'Telegram.Update's
 -- and turn them into 'Action's.
 handleUpdate :: Model -> Telegram.Update -> Maybe Action
 handleUpdate _ =
-  parseUpdate $
+  parseUpdate $ 
   ShowItems <$ command "show" <|> 
-  RemoveItem <$> command "remove" <|> 
+  RemoveItem <$> command "remove_course" <|> 
+  RemoveToDo <$> command "remove_todo" <|> 
   Start <$ command "start" <|>
   WeekCourses <$ command "show_week" <|>
   callbackQueryDataRead
+  <|> AddToDo     <$> text
+
+  
 
 -- TODO make it not as buttons
 remindersAsInlineKeyboard :: Model -> Text -> EditMessage
@@ -343,7 +381,19 @@ handleAction action model =
       model <# do
         replyOrEdit (remindersAsInlineKeyboard model title)
         pure NoAction
-
+    AddToDo title -> 
+      addToDo title model <# do
+        replyText "ToDo in your list"
+        pure NoAction
+    ShowToDo title -> model <# do
+      replyOrEdit (toDoAsInlineKeyboard model)
+      pure NoAction
+    RemoveToDo title ->
+      removeToDo title model <# do
+        replyText ("ToDo " <> title <> " removed from your list")
+        pure NoAction
+    
+        
 -- show actions from course that was selected on user`s list
 run :: Telegram.Token -> IO ()
 run token = do
