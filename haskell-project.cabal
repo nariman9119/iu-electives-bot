@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cb38c4042334f7f01e7b721a4ab3dddd736769a8ae3a5bda6962dc25208276b7
+-- hash: 96b0d16bfa43a47cabf256c02bfa036ff2a5998139b68e7654de84f4c0432102
 
 name:           haskell-project
 version:        0.1.0.0
@@ -39,18 +39,18 @@ library
       aeson
     , base >=4.7 && <5
     , bytestring
+    , hashable
     , http-api-data
     , http-client
     , http-client-tls
+    , lens
     , mtl
     , servant
     , servant-client
     , telegram-bot-simple
     , text
     , time
-    , hashable
     , unordered-containers
-    , lens
   default-language: Haskell2010
 
 executable haskell-project-exe
@@ -64,16 +64,19 @@ executable haskell-project-exe
       aeson
     , base >=4.7 && <5
     , bytestring
+    , hashable
     , haskell-project
     , http-api-data
     , http-client
     , http-client-tls
+    , lens
     , mtl
     , servant
     , servant-client
     , telegram-bot-simple
     , text
     , time
+    , unordered-containers
   default-language: Haskell2010
 
 test-suite doctests
@@ -89,9 +92,11 @@ test-suite doctests
     , base
     , bytestring
     , doctest
+    , hashable
     , http-api-data
     , http-client
     , http-client-tls
+    , lens
     , mtl
     , servant
     , servant-client
@@ -99,12 +104,14 @@ test-suite doctests
     , template-haskell
     , text
     , time
+    , unordered-containers
   default-language: Haskell2010
 
 test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      CourseSpec
       MyProjectSpec
       Paths_haskell_project
   hs-source-dirs:
@@ -116,15 +123,18 @@ test-suite spec
     , aeson
     , base >=4.7 && <5
     , bytestring
+    , hashable
     , haskell-project
     , hspec
     , http-api-data
     , http-client
     , http-client-tls
+    , lens
     , mtl
     , servant
     , servant-client
     , telegram-bot-simple
     , text
     , time
+    , unordered-containers
   default-language: Haskell2010
