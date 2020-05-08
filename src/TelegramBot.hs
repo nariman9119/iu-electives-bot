@@ -67,6 +67,7 @@ data Action
   | ShowTime Text Text
   | AddToDo Text
   | ShowToDo Text
+  | ShowAllToDo
   | RemoveToDo Text
   deriving (Show, Read)
 
@@ -153,6 +154,7 @@ addCourse Nothing model = model
 
 
 
+--Work with ToDo
 addToDo :: Text -> Model -> Model
 addToDo item model = model
   { toDoDescription = item : toDoDescription model }
@@ -162,20 +164,33 @@ removeToDo title model = model {toDoDescription = filter p (toDoDescription mode
   where
     p item = item /= title
 
+showToDo:: Text -> Model -> Text
+showToDo title model = let list = filter (isInfixOf title) (toDoDescription model)
+                        in if null list 
+                          then T.pack ("There is nothing todo in " ++ (T.unpack title)) 
+                          else intercalate "\n" (list) 
+  
+showAllToDo:: Model -> Text
+showAllToDo model = let list = toDoDescription model 
+                      in if null list 
+                        then "There is nothing todo"
+                        else intercalate "\n" (list) 
+      
 
-toDoAsInlineKeyboard :: Model -> EditMessage
-toDoAsInlineKeyboard model =
-  case toDoDescription model of
-    [] -> "The list of todo is not yet available"
-    items ->
-      (toEditMessage "List of available todo items")
-        {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (toDoInlineKeyboard items)}
+-- Do not need, but lets keep it for now
+-- toDoAsInlineKeyboard :: Model -> EditMessage
+-- toDoAsInlineKeyboard model =
+--   case toDoDescription model of
+--     [] -> "There is nothing todo"
+--     items ->
+--       (toEditMessage "List of todo items")
+--         {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (toDoInlineKeyboard items)}
 
-toDoInlineKeyboard :: [Text] -> Telegram.InlineKeyboardMarkup
-toDoInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . toDoInlineKeyboardButton)
+-- toDoInlineKeyboard :: [Text] -> Telegram.InlineKeyboardMarkup
+-- toDoInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . toDoInlineKeyboardButton)
 
-toDoInlineKeyboardButton :: Text -> Telegram.InlineKeyboardButton
-toDoInlineKeyboardButton item = actionButton (item) (NoAction)
+-- toDoInlineKeyboardButton :: Text -> Telegram.InlineKeyboardButton
+-- toDoInlineKeyboardButton item = actionButton (item) (ShowToDoItem item)
 
 
 -- | Ability to remove course from user`s list
@@ -218,6 +233,7 @@ startMessage =
     , "/remove_course - remove course from list of selected courses"
     , "/remove_todo - remove todo item from list of todo items"
     , "/show_week - show courses on this week"
+    , "/todo - show your todo list"
     ]
 
 myCoursesAsInlineKeyboard :: Model -> EditMessage
@@ -266,7 +282,7 @@ myCourseActionsKeyboard title = Telegram.InlineKeyboardMarkup [[btnRemindIn], [b
     btnReminders = actionButton ("Show all reminders") (ShowReminder title)
     btnBack = actionButton "\x2B05 Back to course list" ShowItems
     btnRemindIn = actionButton ("Set reminder") (SetReminderIn title)
-    btnToDo = actionButton ("ToDo") (ShowToDo title)
+    btnToDo = actionButton (T.pack("ToDo in " ++ (T.unpack title))) (ShowToDo title)
 
 
 -- | How to process incoming 'Telegram.Update's
@@ -277,6 +293,7 @@ handleUpdate _ =
   ShowItems <$ command "show" <|> 
   RemoveItem <$> command "remove_course" <|> 
   RemoveToDo <$> command "remove_todo" <|> 
+  ShowAllToDo <$ command "show_todo" <|>
   Start <$ command "start" <|>
   WeekCourses <$ command "show_week" <|>
   callbackQueryDataRead
@@ -386,12 +403,16 @@ handleAction action model =
         replyText "ToDo in your list"
         pure NoAction
     ShowToDo title -> model <# do
-      replyOrEdit (toDoAsInlineKeyboard model)
+      replyText (showToDo title model)
+      pure NoAction
+    ShowAllToDo -> model  <# do
+      replyText (showAllToDo model)
       pure NoAction
     RemoveToDo title ->
       removeToDo title model <# do
         replyText ("ToDo " <> title <> " removed from your list")
         pure NoAction
+
     
         
 -- show actions from course that was selected on user`s list
