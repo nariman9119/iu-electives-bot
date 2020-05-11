@@ -47,6 +47,8 @@ dependencies:
 - lens
 - HDBC
 - HDBC-sqlite3
+- xlsx
+- array
 
 library:
   source-dirs: src
