@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 96b0d16bfa43a47cabf256c02bfa036ff2a5998139b68e7654de84f4c0432102
+-- hash: 23fd264829e3c658f063fbbd1ccccc3ddf0966f340a87404d109c5c73fb6d922
 
 name:           haskell-project
 version:        0.1.0.0
@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       Course
+      Parser
       TelegramBot
       Translate
   other-modules:
@@ -37,6 +38,7 @@ library
   ghc-options: -Wall -fno-warn-type-defaults
   build-depends:
       aeson
+    , array
     , base >=4.7 && <5
     , bytestring
     , hashable
@@ -51,6 +53,7 @@ library
     , text
     , time
     , unordered-containers
+    , xlsx
   default-language: Haskell2010
 
 executable haskell-project-exe
@@ -62,6 +65,7 @@ executable haskell-project-exe
   ghc-options: -Wall -fno-warn-type-defaults -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
+    , array
     , base >=4.7 && <5
     , bytestring
     , hashable
@@ -77,6 +81,7 @@ executable haskell-project-exe
     , text
     , time
     , unordered-containers
+    , xlsx
   default-language: Haskell2010
 
 test-suite doctests
@@ -89,6 +94,7 @@ test-suite doctests
       Glob
     , QuickCheck
     , aeson
+    , array
     , base
     , bytestring
     , doctest
@@ -105,6 +111,7 @@ test-suite doctests
     , text
     , time
     , unordered-containers
+    , xlsx
   default-language: Haskell2010
 
 test-suite spec
@@ -121,6 +128,7 @@ test-suite spec
       HUnit
     , QuickCheck
     , aeson
+    , array
     , base >=4.7 && <5
     , bytestring
     , hashable
@@ -137,4 +145,5 @@ test-suite spec
     , text
     , time
     , unordered-containers
+    , xlsx
   default-language: Haskell2010

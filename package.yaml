@@ -45,6 +45,8 @@ dependencies:
 - hashable
 - unordered-containers
 - lens
+- xlsx
+- array
 
 library:
   source-dirs: src
