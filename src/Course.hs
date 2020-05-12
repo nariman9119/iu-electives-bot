@@ -51,7 +51,7 @@ instance ToJSON LectureTime where   -- decode (encode lect):: Maybe LectureTime
     "startTime" .= T.pack (timeToStr startTime),
     "endTime" .= T.pack (timeToStr endTime)]
 
-type Room = Int -- room number
+type Room = String -- room number
 
 data Lecture = Lecture {lecTime::LectureTime, room::Room} deriving (Show, Generic)
 instance FromJSON Lecture where
@@ -114,15 +114,10 @@ thisWeekSchedule timezonedDay courses = filter (not . null . lectures) thisWeekC
             Course {name =name course, lectures = thisWeekCourseLectures timezonedDay course}) courses
 
 
-loadCourse:: String-> IO (Maybe Course)
-loadCourse filename = do
-    filecontent <- BS.readFile filename
-    return (decode (filecontent) :: Maybe Course)
-
-loadCourses::IO [(Maybe Course)]
-loadCourses = mapM loadCourse coursesStr
-    where
-        coursesStr = ["CV_Course.json", "Devops_Course.json", "Haskell_Course.json", "Virtualization_Course.json"]
+--loadCourse:: String-> IO (Maybe Course)
+--loadCourse filename = do
+--    filecontent <- BS.readFile filename
+--    return (decode (filecontent) :: Maybe Course)
 
 compareCourses :: Text -> Course -> Bool
 compareCourses title course = (T.pack $ name course) == title

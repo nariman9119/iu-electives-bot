@@ -12,6 +12,8 @@ import           Data.Hashable              (Hashable)
 import           Data.HashMap.Strict        (HashMap)
 import qualified Data.HashMap.Strict        as HashMap
 
+import Parser
+
 
 import           Control.Applicative              ((<|>))
 import           Control.Concurrent               (threadDelay)
@@ -71,13 +73,15 @@ data Action
   | RemoveToDo Text
   deriving (Show, Read)
 
+loadCourses::IO [Course]
+loadCourses = Parser.runParser
 
 initialModel :: IO Model
 initialModel = do
   now <- getCurrentTime
   tz  <-  getCurrentTimeZone
   allCourses <- loadCourses
-  pure Model {electiveCourses = catMaybes allCourses, myElectiveCourses = [], currentTime = now, timeZone = tz, remindLectures = [], toDoDescription = []}
+  pure Model {electiveCourses = allCourses, myElectiveCourses = [], currentTime = now, timeZone = tz, remindLectures = [], toDoDescription = []}
 
 
 
@@ -215,6 +219,7 @@ initBot :: IO  (BotApp
                   (Maybe Telegram.ChatId, Action))
 initBot = do
   model <- initialModel
+  print model
   let botjobs = [BotJob {botJobSchedule =  "* * * * *" -- every minute
                      ,  botJobTask = lectureReminder
                      }

@@ -11,8 +11,8 @@ import Parser as Parser
 
 main :: IO ()
 main = do
-  Parser.runParser
---  putStrLn "Please, enter Telegram bot's API token:"
---  token <- Telegram.Token . Text.pack <$> getLine
+--  Parser.runParser
+  putStrLn "Please, enter Telegram bot's API token:"
+  token <- Telegram.Token . Text.pack <$> getLine
     
---  TelegramBot.run token
+  TelegramBot.run token
