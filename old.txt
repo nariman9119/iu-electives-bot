@@ -1,0 +1,71 @@
+[Just (
+Course  {name = "CV", 
+    Lecture s = [
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-05-04 18:15:00 UTC, endTime = 2020-05-04 12:05:00 UTC}, room = 100},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-05-04 18:17:00 UTC, endTime = 2020-05-05 14:10:00 UTC}, room = 100},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-05-06 10:35:00 UTC, endTime = 2020-05-06 12:05:00 UTC}, room = 312},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-05-07 12:15:00 UTC, endTime = 2020-05-07 13:45:00 UTC}, room = 312},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-05-07 10:35:00 UTC, endTime = 2020-05-07 12:05:20 UTC}, room = 100},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-05-08 17:10:00 UTC, endTime = 2020-05-08 18:40:00 UTC}, room = 321},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-05-08 18:50:00 UTC, endTime = 2020-05-08 20:10:00 UTC}, room = 321}]}),Just (
+Course  {name = "Devops", 
+    Lecture s = [
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-03-06 17:10:00 UTC, endTime = 2020-01-14 18:40:00 UTC}, room = 106},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-01-20 13:40:00 UTC, endTime = 2020-01-20 14:10:00 UTC}, room = 106},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-01-21 10:35:00 UTC, endTime = 2020-01-21 12:05:00 UTC}, room = 101},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-01-21 12:15:00 UTC, endTime = 2020-01-21 13:45:00 UTC}, room = 101},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-06 10:35:00 UTC, endTime = 2020-02-06 12:05:20 UTC}, room = 101},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-11 17:10:00 UTC, endTime = 2020-02-11 18:40:00 UTC}, room = 320},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-09 10:30:00 UTC, endTime = 2020-02-09 12:10:00 UTC}, room = 104},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-18 18:50:00 UTC, endTime = 2020-02-18 20:10:00 UTC}, room = 320}]}),Just (
+Course  {name = "Haskell", 
+    Lecture s = [
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-03-05 10:35:00 UTC, endTime = 2020-01-20 12:05:00 UTC}, room = 100},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-03-06 13:40:00 UTC, endTime = 2020-03-06 14:10:00 UTC}, room = 100},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-03-07 10:35:00 UTC, endTime = 2020-03-07 12:05:00 UTC}, room = 312},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-01-28 12:15:00 UTC, endTime = 2020-01-28 13:45:00 UTC}, room = 312},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-04 10:35:00 UTC, endTime = 2020-02-04 12:05:20 UTC}, room = 100},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-11 17:10:00 UTC, endTime = 2020-02-11 18:40:00 UTC}, room = 312},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-11 18:50:00 UTC, endTime = 2020-02-11 20:10:00 UTC}, room = 312},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-18 18:50:00 UTC, endTime = 2020-02-18 20:10:00 UTC}, room = 312}]}),Just (
+Course  {name = "Virtualization", 
+    Lecture s = [
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-01-14 17:10:00 UTC, endTime = 2020-01-14 18:40:00 UTC}, room = 108},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-01-20 13:40:00 UTC, endTime = 2020-01-20 14:10:00 UTC}, room = 108},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-01-21 10:35:00 UTC, endTime = 2020-01-21 12:05:00 UTC}, room = 312},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-01-22 12:15:00 UTC, endTime = 2020-01-22 13:45:00 UTC}, room = 108},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-06 10:35:00 UTC, endTime = 2020-02-06 12:05:20 UTC}, room = 100},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-11 17:10:00 UTC, endTime = 2020-02-11 18:40:00 UTC}, room = 318},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-11 18:50:00 UTC, endTime = 2020-02-11 20:10:00 UTC}, room = 104},
+    Lecture  {lecTime = 
+    Lecture Time {startTime = 2020-02-18 18:50:00 UTC, endTime = 2020-02-18 20:10:00 UTC}, room = 104}]})]
