@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 96b0d16bfa43a47cabf256c02bfa036ff2a5998139b68e7654de84f4c0432102
+-- hash: 8a37ac272de28b865882c68435ae1766a718ac438bb3741ebef6cf6bf9a1ae49
 
 name:           haskell-project
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      BotDatabase
       Course
       TelegramBot
       Translate
@@ -36,7 +37,9 @@ library
       src
   ghc-options: -Wall -fno-warn-type-defaults
   build-depends:
-      aeson
+      HDBC
+    , HDBC-sqlite3
+    , aeson
     , base >=4.7 && <5
     , bytestring
     , hashable
@@ -61,7 +64,9 @@ executable haskell-project-exe
       app
   ghc-options: -Wall -fno-warn-type-defaults -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
+      HDBC
+    , HDBC-sqlite3
+    , aeson
     , base >=4.7 && <5
     , bytestring
     , hashable
@@ -87,6 +92,8 @@ test-suite doctests
   ghc-options: -Wall -fno-warn-type-defaults
   build-depends:
       Glob
+    , HDBC
+    , HDBC-sqlite3
     , QuickCheck
     , aeson
     , base
@@ -118,7 +125,9 @@ test-suite spec
       test
   ghc-options: -Wall -fno-warn-type-defaults -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      HUnit
+      HDBC
+    , HDBC-sqlite3
+    , HUnit
     , QuickCheck
     , aeson
     , base >=4.7 && <5

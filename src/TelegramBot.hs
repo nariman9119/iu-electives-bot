@@ -32,6 +32,9 @@ import           Telegram.Bot.Simple.UpdateParser
 import           Telegram.Bot.Simple.Conversation
 import           Control.Lens
 
+import BotDatabase
+import Database.HDBC.Sqlite3 (Connection)
+
 -- | Bot conversation state model.
 data Model =
   Model
@@ -41,6 +44,7 @@ data Model =
     , timeZone          :: TimeZone
     , remindLectures    :: [ToRemindLecture]
     , toDoDescription   :: [Text]
+--    , dbConnection      :: Connection
     }
   deriving (Show)
 
@@ -77,7 +81,15 @@ initialModel = do
   now <- getCurrentTime
   tz  <-  getCurrentTimeZone
   allCourses <- loadCourses
-  pure Model {electiveCourses = catMaybes allCourses, myElectiveCourses = [], currentTime = now, timeZone = tz, remindLectures = [], toDoDescription = []}
+--  conn <- BotDatabase.initDb
+  pure Model { electiveCourses = catMaybes allCourses
+             , myElectiveCourses = []
+             , currentTime = now
+             , timeZone = tz
+             , remindLectures = []
+             , toDoDescription = []
+--             , dbConnection = conn
+             }
 
 
 
@@ -150,6 +162,7 @@ addCourse (Just course) model = do
   if (isMember course (myElectiveCourses model))
     then model
     else model {myElectiveCourses = course : myElectiveCourses model}
+--  BotDatabase.insertToDb (dbConnection model) (show model)
 addCourse Nothing model = model
 
 

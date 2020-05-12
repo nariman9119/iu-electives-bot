@@ -37,6 +37,7 @@ packages:
 extra-deps:
   - git: https://github.com/fizruk/telegram-bot-simple.git
     commit: 083d4e78baee47d49fca10156df95de1903d54bc
+  - HDBC-sqlite3-2.3.3.1@sha256:5025fd94d02b9b3f0b8b8233796dd9a85a0b3dda6503c6e671e3eddbc51cb4d4,2424
 # extra-deps:
 # - acme-missiles-0.3
 # - git: https://github.com/commercialhaskell/stack.git

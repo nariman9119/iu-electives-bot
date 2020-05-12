@@ -45,6 +45,8 @@ dependencies:
 - hashable
 - unordered-containers
 - lens
+- HDBC
+- HDBC-sqlite3
 
 library:
   source-dirs: src
