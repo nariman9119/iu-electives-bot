@@ -12,7 +12,13 @@ import           Data.Text                        as T hiding (concat, filter,
 
 data Lecture = Lecture {name :: String, teacher :: String, room :: String, time :: String, day :: String} deriving (Show)
 
--- 37, 816
+columnStart = 5
+columnEnd = 35
+
+rowStart = 2
+rowEnd = 10
+
+-- 35, 816
 
 -- time !! ((y + 1) `mod` 7)
 
@@ -22,38 +28,33 @@ timeArray = [
   ("10:35:00", "12:05:00"),
   ("12:10:00", "13:40:00"),
   ("14:10:00", "15:40:00"),
+  ("15:45:00", "17:15:00"),
   ("17:20:00", "18:50:00"),
   ("18:55:00", "20:25:00"),
   ("20:30:00", "22:00:00")]
-
--- (y - 2) / 8
--- (y - 2) / 8
 
 getDay :: Int -> Int
 getDay y = ((y - 2) `div` 8)
 
 getTime y = fst timePair ++ "-" ++ snd timePair
   where
-    timePair = timeArray !! ((y - 1) `mod` 7)
+    timePair = timeArray !! ((y - 1) `mod` 8)
 
 --getContent :: Int -> Int -> IO(Maybe CellText)
-getContent x y = do
-  file <- L.readFile "report.xlsx"
-  let value = toXlsx file ^? ixSheet (T.pack $ "Main") . ixCell (x,y) . cellValue . _Just
+getContent x y xlsx = do
+  let value = xlsx ^? ixSheet (T.pack $ "Main") . ixCell (x,y) . cellValue . _Just
   return value
 
-foo :: [Int] -> Int -> [(Int, String)] -> IO([(Int, Lecture)])
-foo (y:ys) x date = do
-  word <- getContent y x
-  words <- foo ys x date
+foo :: [Int] -> Int -> [(Int, String)] -> Xlsx -> IO([(Int, Lecture)])
+foo (y:ys) x date xlsx = do
+  word <- getContent y x xlsx
+  words <- foo ys x date xlsx
 
   let objStr = case word of
        Just (CellText a) -> do
         let splitted = (splitOn (T.pack $ "\n") a)
-        let name = (splitOn (T.pack $ "\"") (splitted !! 0)) !! 0
         let day = snd (date !! (getDay y))
-        Lecture {name = T.unpack $ name, teacher = T.unpack $ (splitted !! 1), room = T.unpack $ (splitted !! 2), time = (getTime x), day = day}
---        (replacing) ++ (getTime x)
+        Lecture {name = T.unpack $ (splitted !! 0), teacher = T.unpack $ (splitted !! 1), room = T.unpack $ (splitted !! 2), time = (getTime y), day = day}
        Just _ -> Lecture {}
        Nothing -> Lecture {}
 
@@ -61,20 +62,20 @@ foo (y:ys) x date = do
     return ((y, objStr) : words)
   else
     return words
-foo [] _ _ = do return []
+foo [] _ _ _ = do return []
 
-goColumns :: [Int] -> [(Int, String)] -> IO([(Int, [(Int, Lecture)])])
-goColumns (column:columns) date = do
-  word <- foo (Data.Array.range (2, 10)) column date
-  words <- goColumns columns date
+goColumns :: [Int] -> [(Int, String)] -> Xlsx -> IO([(Int, [(Int, Lecture)])])
+goColumns (column:columns) date xlsx = do
+  word <- foo (Data.Array.range (rowStart, rowEnd)) column date xlsx
+  words <- goColumns columns date xlsx
 
   return ((column, word) : words)
-goColumns [] _ = do return []
+goColumns [] _ _ = do return []
 
-getDate :: [Int] -> IO([(Int, String)])
-getDate (y:ys) = do
-  word <- getContent y 1
-  words <- getDate ys
+getDate :: [Int] -> Xlsx -> IO([(Int, String)])
+getDate (y:ys) xlsx = do
+  word <- getContent y 1 xlsx
+  words <- getDate ys xlsx
 
   let objStr = case word of
          Just (CellText a) -> T.unpack $ a
@@ -88,11 +89,13 @@ getDate (y:ys) = do
     return ((getDay y, parsedDay) : words)
   else
     return words
-getDate [] = do return []
+getDate [] _ = do return []
 
 runParser :: IO ()
 runParser = do
-  date <- getDate (Data.Array.range (2, 60))
+  file <- L.readFile "electives.xlsx"
+  let xlsx = toXlsx file
+  date <- getDate (Data.Array.range (rowStart, rowEnd + 100)) xlsx
   print date
-  dates <- goColumns (Data.Array.range (31, 37)) date
+  dates <- goColumns (Data.Array.range (columnStart, columnEnd)) date xlsx
   print dates
