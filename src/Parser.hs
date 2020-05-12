@@ -21,7 +21,7 @@ data OldLecture = OldLecture {oldName :: String, oldTeacher :: String, oldRoom :
 --data CourseData = CourseData {name :: String, teacher :: String, lectures :: [Course.Lecture]} deriving (Show)
 
 columnStart = 6
-columnEnd = 10
+columnEnd = 20
 
 rowStart = 300
 rowEnd = 815
@@ -78,7 +78,7 @@ foo (y:ys) x date xlsx = do
         let splitted = (splitOn (T.pack $ "\r\n") a)
         let day = snd (getIWithA date (getDay y))
         let oldLecTime = LectureTime {startTime = strToTime (day ++ ":" ++ (fst (getTime y))), endTime = strToTime (day ++ ":" ++ (snd (getTime y)))}
-        OldLecture {oldName = take 20 (T.unpack $ (getI splitted 0)), oldTeacher = T.unpack $ (getI splitted 1), oldRoom = T.unpack $ (getRoomI splitted 2), oldLecTime = oldLecTime}
+        OldLecture {oldName = take 30 (T.unpack $ (getI splitted 0)), oldTeacher = T.unpack $ (getI splitted 1), oldRoom = T.unpack $ (getRoomI splitted 2), oldLecTime = oldLecTime}
        Just _ -> OldLecture {}
        Nothing -> OldLecture {}
 
