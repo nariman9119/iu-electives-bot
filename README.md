@@ -7,12 +7,21 @@ Telegram bot for scheduling elective courses in  Innopolis University.
 This bot helps you to not forget time and palce of your elective lectures, by aggregating all elective courses 
 schedule from official elective courses source in Innopolis University. 
 
+1. Aggregate elective schedule by parsing IU elective table
+2. Separate chats sessions
+3. Course TODOs and reminders
+
+### Future features
+Database to store users' states in case of bot restart
+
 ## What you can do with this bot?
 
 1. Add available courses to your base (bot will remember what courses you have chosen)
 2. Can see full schedule of your courses: lectures time and place
 3. Set reminder on specific course - our bot will send you message that you have lecture now
 4. Add todos messages to course
+
+
 
 ## Pipeline:
 
@@ -73,7 +82,3 @@ Elizabeth Batanina
 Anton Timchenko
 
 Nariman Daniyar
-
-### Future work 
-
-Add DataBase 
