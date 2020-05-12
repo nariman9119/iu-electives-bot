@@ -1,6 +1,7 @@
 module Parser (runParser) where
 
-import Course (strToTime)
+import Course
+import Data.Maybe
 import Data.Time.Clock
 import qualified Data.Array
 import qualified Data.List
@@ -12,15 +13,15 @@ import           Data.Text                        as T hiding (concat, filter,
                                                         length, map, null, zip,
                                                         zipWith, take, init)
 
-data Lecture = Lecture {room :: String, lecTime :: LectureTime} deriving (Show)
+--data Lecture = Lecture {room :: Int, lecTime :: LectureTime} deriving (Show)
 
 data OldLecture = OldLecture {oldName :: String, oldTeacher :: String, oldRoom :: String, oldLecTime :: LectureTime} deriving (Show)
-data LectureTime = LectureTime {startTime::UTCTime, endTime::UTCTime} deriving (Show)
+--data LectureTime = LectureTime {startTime::UTCTime, endTime::UTCTime} deriving (Show)
 
-data CourseData = CourseData {name :: String, teacher :: String, lectures :: [Lecture]} deriving (Show)
+--data CourseData = CourseData {name :: String, teacher :: String, lectures :: [Course.Lecture]} deriving (Show)
 
 columnStart = 5
-columnEnd = 34
+columnEnd = 6
 
 rowStart = 2
 rowEnd = 815
@@ -43,7 +44,7 @@ timeArray = [
 getI :: [Text] -> Int -> Text
 getI splitted i
   | (i < length splitted) = splitted !! i
-  | otherwise = T.pack $ ""
+  | otherwise = T.pack $ "101"
 
 getRoomI :: [Text] -> Int -> Text
 getRoomI splitted i
@@ -87,14 +88,14 @@ foo (y:ys) x date xlsx = do
     return words
 foo [] _ _ _ = do return []
 
-goColumns :: [Int] -> [(Int, String)] -> Xlsx -> IO([CourseData])
+goColumns :: [Int] -> [(Int, String)] -> Xlsx -> IO([Course])
 goColumns (column:columns) date xlsx = do
   word <- foo (Data.Array.range (rowStart, rowEnd)) column date xlsx
   words <- goColumns columns date xlsx
 
   let normLectures = map (\lecture -> Lecture {room = oldRoom lecture, lecTime = oldLecTime lecture}) word
 
-  let course = CourseData {name = oldName (word !! 0), teacher = oldTeacher (word !! 0), lectures = normLectures}
+  let course = Course {name = oldName (word !! 0), lectures = normLectures}
 
   return (course : words)
 goColumns [] _ _ = do return []
@@ -127,11 +128,10 @@ getDate (y:ys) xlsx = do
     return words
 getDate [] _ = do return []
 
-runParser :: IO ()
+runParser :: IO ([Course])
 runParser = do
   file <- L.readFile "electives.xlsx"
   let xlsx = toXlsx file
   date <- getDate (Data.Array.range (rowStart, rowEnd)) xlsx
-  print date
-  dates <- goColumns (Data.Array.range (columnStart, columnEnd)) date xlsx
-  print dates
+  courses <- goColumns (Data.Array.range (columnStart, columnEnd)) date xlsx
+  return courses
