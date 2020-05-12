@@ -77,7 +77,7 @@ data Action
   | RemoveToDo Text
   deriving (Show, Read)
 
-loadCourses::IO [Course]
+loadCourses::IO [Maybe Course]
 loadCourses = Parser.runParser
 
 initialModel :: IO Model
@@ -86,7 +86,7 @@ initialModel = do
   tz  <-  getCurrentTimeZone
   allCourses <- loadCourses
 --  conn <- BotDatabase.initDb
-  pure Model { electiveCourses = allCourses
+  pure Model { electiveCourses = catMaybes allCourses
              , myElectiveCourses = []
              , currentTime = now
              , timeZone = tz

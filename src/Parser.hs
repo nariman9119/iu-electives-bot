@@ -20,8 +20,8 @@ data OldLecture = OldLecture {oldName :: String, oldTeacher :: String, oldRoom :
 
 --data CourseData = CourseData {name :: String, teacher :: String, lectures :: [Course.Lecture]} deriving (Show)
 
-columnStart = 5
-columnEnd = 6
+columnStart = 6
+columnEnd = 10
 
 rowStart = 2
 rowEnd = 815
@@ -78,7 +78,7 @@ foo (y:ys) x date xlsx = do
         let splitted = (splitOn (T.pack $ "\r\n") a)
         let day = snd (getIWithA date (getDay y))
         let oldLecTime = LectureTime {startTime = strToTime (day ++ ":" ++ (fst (getTime y))), endTime = strToTime (day ++ ":" ++ (snd (getTime y)))}
-        OldLecture {oldName = T.unpack $ (getI splitted 0), oldTeacher = T.unpack $ (getI splitted 1), oldRoom = T.unpack $ (getRoomI splitted 2), oldLecTime = oldLecTime}
+        OldLecture {oldName = take 20 (T.unpack $ (getI splitted 0)), oldTeacher = T.unpack $ (getI splitted 1), oldRoom = T.unpack $ (getRoomI splitted 2), oldLecTime = oldLecTime}
        Just _ -> OldLecture {}
        Nothing -> OldLecture {}
 
@@ -88,14 +88,14 @@ foo (y:ys) x date xlsx = do
     return words
 foo [] _ _ _ = do return []
 
-goColumns :: [Int] -> [(Int, String)] -> Xlsx -> IO([Course])
+goColumns :: [Int] -> [(Int, String)] -> Xlsx -> IO([Maybe Course])
 goColumns (column:columns) date xlsx = do
   word <- foo (Data.Array.range (rowStart, rowEnd)) column date xlsx
   words <- goColumns columns date xlsx
 
   let normLectures = map (\lecture -> Lecture {room = oldRoom lecture, lecTime = oldLecTime lecture}) word
 
-  let course = Course {name = oldName (word !! 0), lectures = normLectures}
+  let course = Just Course {name = oldName (word !! 0), lectures = normLectures}
 
   return (course : words)
 goColumns [] _ _ = do return []
@@ -128,7 +128,7 @@ getDate (y:ys) xlsx = do
     return words
 getDate [] _ = do return []
 
-runParser :: IO ([Course])
+runParser :: IO ([Maybe Course])
 runParser = do
   file <- L.readFile "electives.xlsx"
   let xlsx = toXlsx file
