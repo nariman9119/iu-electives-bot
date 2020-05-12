@@ -21,23 +21,29 @@ schedule from official elective courses source in Innopolis University.
 ![start screen](img/start.png)
 
 2. Add courses and list your  courses 
+
 ![add courses](img/list_courses.png)
 
 3. Remove courses
+
 ![remove courses](img/remove_courses.png)
 
 4. Show course content
 
 Course has: list of lectures with rooms by default, you can set reminders on this course and add todos.
+
 ![course content](img/course_content.png)
 
 5. You can also check what reminders you have
+
 ![course reminders](img/list_reminders.png)
 
 6. Receive message-reminder about starting lecture
+
 ![reminder](img/reminder.png)
 
 7. Add TODOs to your course about future tasks or deadlines
+
 ![todo](img/add_todo.png)
 
 ## How to build and run
