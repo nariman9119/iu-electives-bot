@@ -8,10 +8,14 @@ import qualified Data.ByteString.Lazy as L
 import Control.Lens
 import           Data.Text                        as T hiding (concat, filter,
                                                         length, map, null, zip,
-                                                        zipWith, take)
+                                                        zipWith, take, init)
 
-data Lecture = Lecture {name :: String, teacher :: String, room :: String, lecTime :: LectureTime} deriving (Show)
+data Lecture = Lecture {room :: String, lecTime :: LectureTime} deriving (Show)
+
+data OldLecture = OldLecture {oldName :: String, oldTeacher :: String, oldRoom :: String, oldLecTime :: LectureTime} deriving (Show)
 data LectureTime = LectureTime {startTime::String, endTime::String} deriving (Show)
+
+data CourseData = CourseData {name :: String, teacher :: String, lectures :: [Lecture]} deriving (Show)
 
 columnStart = 5
 columnEnd = 35
@@ -56,7 +60,7 @@ getContent x y xlsx = do
   let value = xlsx ^? ixSheet (T.pack $ "Main") . ixCell (x,y) . cellValue . _Just
   return value
 
-foo :: [Int] -> Int -> [(Int, String)] -> Xlsx -> IO([(Int, Lecture)])
+foo :: [Int] -> Int -> [(Int, String)] -> Xlsx -> IO([OldLecture])
 foo (y:ys) x date xlsx = do
   word <- getContent y x xlsx
   words <- foo ys x date xlsx
@@ -65,28 +69,36 @@ foo (y:ys) x date xlsx = do
        Just (CellText a) -> do
         let splitted = (splitOn (T.pack $ "\r\n") a)
         let day = snd (getIWithA date (getDay y))
-        let lecTime = LectureTime {startTime = day ++ ":" ++ (fst (getTime y)), endTime = day ++ ":" ++ (snd (getTime y))}
-        Lecture {name = T.unpack $ (getI splitted 0), teacher = T.unpack $ (getI splitted 1), room = T.unpack $ (getI splitted 2), lecTime = lecTime}
-       Just _ -> Lecture {}
-       Nothing -> Lecture {}
+        let oldLecTime = LectureTime {startTime = day ++ ":" ++ (fst (getTime y)), endTime = day ++ ":" ++ (snd (getTime y))}
+        OldLecture {oldName = T.unpack $ (getI splitted 0), oldTeacher = T.unpack $ (getI splitted 1), oldRoom = T.unpack $ (getI splitted 2), oldLecTime = oldLecTime}
+       Just _ -> OldLecture {}
+       Nothing -> OldLecture {}
 
   if (Data.Maybe.isJust word) then
-    return ((y, objStr) : words)
+    return (objStr : words)
   else
     return words
 foo [] _ _ _ = do return []
 
-goColumns :: [Int] -> [(Int, String)] -> Xlsx -> IO([(Int, [(Int, Lecture)])])
+goColumns :: [Int] -> [(Int, String)] -> Xlsx -> IO([CourseData])
 goColumns (column:columns) date xlsx = do
   word <- foo (Data.Array.range (rowStart, rowEnd)) column date xlsx
   words <- goColumns columns date xlsx
 
-  return ((column, word) : words)
+  let normLectures = map (\lecture -> Lecture {room = oldRoom lecture, lecTime = oldLecTime lecture}) word
+
+  let course = CourseData {name = oldName (word !! 0), teacher = oldTeacher (word !! 0), lectures = normLectures}
+
+  return (course : words)
 goColumns [] _ _ = do return []
 
 format0 str
   | (length str == 2) = str
   | otherwise = "0" ++ str
+
+formatYear str
+  | (length str == 4) = str
+  | otherwise = init str
 
 getDate :: [Int] -> Xlsx -> IO([(Int, String)])
 getDate (y:ys) xlsx = do
@@ -100,7 +112,7 @@ getDate (y:ys) xlsx = do
 
   let splittedDay = splitOn (T.pack $ "/") (T.pack $ objStr)
 
-  let parsedDay = (T.unpack $ splittedDay !! 2) ++ "-" ++ (format0 (T.unpack $ splittedDay !! 1)) ++ "-" ++ (format0 (T.unpack $ splittedDay !! 0))
+  let parsedDay = (formatYear (T.unpack $ splittedDay !! 2)) ++ "-" ++ (format0 (T.unpack $ splittedDay !! 1)) ++ "-" ++ (format0 (T.unpack $ splittedDay !! 0))
 
   if (Data.Maybe.isJust word) then
     return ((getDay y, parsedDay) : words)
