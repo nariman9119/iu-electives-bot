@@ -23,7 +23,7 @@ data OldLecture = OldLecture {oldName :: String, oldTeacher :: String, oldRoom :
 columnStart = 6
 columnEnd = 10
 
-rowStart = 2
+rowStart = 300
 rowEnd = 815
 
 -- 35, 816
@@ -132,6 +132,6 @@ runParser :: IO ([Maybe Course])
 runParser = do
   file <- L.readFile "electives.xlsx"
   let xlsx = toXlsx file
-  date <- getDate (Data.Array.range (rowStart, rowEnd)) xlsx
+  date <- getDate (Data.Array.range (2, rowEnd)) xlsx
   courses <- goColumns (Data.Array.range (columnStart, columnEnd)) date xlsx
   return courses
