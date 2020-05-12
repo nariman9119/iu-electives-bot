@@ -10,13 +10,14 @@ import           Data.Text                        as T hiding (concat, filter,
                                                         length, map, null, zip,
                                                         zipWith, take)
 
-data Lecture = Lecture {name :: String, teacher :: String, room :: String, time :: String, day :: String} deriving (Show)
+data Lecture = Lecture {name :: String, teacher :: String, room :: String, lecTime :: LectureTime} deriving (Show)
+data LectureTime = LectureTime {startTime::String, endTime::String} deriving (Show)
 
 columnStart = 5
 columnEnd = 35
 
 rowStart = 2
-rowEnd = 10
+rowEnd = 815
 
 -- 35, 816
 
@@ -33,10 +34,20 @@ timeArray = [
   ("18:55:00", "20:25:00"),
   ("20:30:00", "22:00:00")]
 
+getI :: [Text] -> Int -> Text
+getI splitted i
+  | (i < length splitted) = splitted !! i
+  | otherwise = T.pack $ ""
+
+getIWithA :: [(Int, String)] -> Int -> (Int, String)
+getIWithA splitted i
+  | (i < length splitted) = splitted !! i
+  | otherwise = (1, "")
+
 getDay :: Int -> Int
 getDay y = ((y - 2) `div` 8)
 
-getTime y = fst timePair ++ "-" ++ snd timePair
+getTime y = timePair
   where
     timePair = timeArray !! ((y - 1) `mod` 8)
 
@@ -52,9 +63,10 @@ foo (y:ys) x date xlsx = do
 
   let objStr = case word of
        Just (CellText a) -> do
-        let splitted = (splitOn (T.pack $ "\n") a)
-        let day = snd (date !! (getDay y))
-        Lecture {name = T.unpack $ (splitted !! 0), teacher = T.unpack $ (splitted !! 1), room = T.unpack $ (splitted !! 2), time = (getTime y), day = day}
+        let splitted = (splitOn (T.pack $ "\r\n") a)
+        let day = snd (getIWithA date (getDay y))
+        let lecTime = LectureTime {startTime = day ++ ":" ++ (fst (getTime y)), endTime = day ++ ":" ++ (snd (getTime y))}
+        Lecture {name = T.unpack $ (getI splitted 0), teacher = T.unpack $ (getI splitted 1), room = T.unpack $ (getI splitted 2), lecTime = lecTime}
        Just _ -> Lecture {}
        Nothing -> Lecture {}
 
@@ -72,6 +84,10 @@ goColumns (column:columns) date xlsx = do
   return ((column, word) : words)
 goColumns [] _ _ = do return []
 
+format0 str
+  | (length str == 2) = str
+  | otherwise = "0" ++ str
+
 getDate :: [Int] -> Xlsx -> IO([(Int, String)])
 getDate (y:ys) xlsx = do
   word <- getContent y 1 xlsx
@@ -83,7 +99,8 @@ getDate (y:ys) xlsx = do
          Nothing -> ""
 
   let splittedDay = splitOn (T.pack $ "/") (T.pack $ objStr)
-  let parsedDay = (T.unpack $ splittedDay !! 0) ++ "-" ++ (T.unpack $ splittedDay !! 1) ++ "-" ++ (T.unpack $ splittedDay !! 2)
+
+  let parsedDay = (T.unpack $ splittedDay !! 2) ++ "-" ++ (format0 (T.unpack $ splittedDay !! 1)) ++ "-" ++ (format0 (T.unpack $ splittedDay !! 0))
 
   if (Data.Maybe.isJust word) then
     return ((getDay y, parsedDay) : words)
@@ -95,7 +112,7 @@ runParser :: IO ()
 runParser = do
   file <- L.readFile "electives.xlsx"
   let xlsx = toXlsx file
-  date <- getDate (Data.Array.range (rowStart, rowEnd + 100)) xlsx
+  date <- getDate (Data.Array.range (rowStart, rowEnd)) xlsx
   print date
   dates <- goColumns (Data.Array.range (columnStart, columnEnd)) date xlsx
   print dates
