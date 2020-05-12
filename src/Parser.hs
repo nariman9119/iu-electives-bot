@@ -1,5 +1,7 @@
 module Parser (runParser) where
 
+import Course (strToTime)
+import Data.Time.Clock
 import qualified Data.Array
 import qualified Data.List
 import qualified Data.Maybe
@@ -13,12 +15,12 @@ import           Data.Text                        as T hiding (concat, filter,
 data Lecture = Lecture {room :: String, lecTime :: LectureTime} deriving (Show)
 
 data OldLecture = OldLecture {oldName :: String, oldTeacher :: String, oldRoom :: String, oldLecTime :: LectureTime} deriving (Show)
-data LectureTime = LectureTime {startTime::String, endTime::String} deriving (Show)
+data LectureTime = LectureTime {startTime::UTCTime, endTime::UTCTime} deriving (Show)
 
 data CourseData = CourseData {name :: String, teacher :: String, lectures :: [Lecture]} deriving (Show)
 
 columnStart = 5
-columnEnd = 35
+columnEnd = 34
 
 rowStart = 2
 rowEnd = 815
@@ -42,6 +44,11 @@ getI :: [Text] -> Int -> Text
 getI splitted i
   | (i < length splitted) = splitted !! i
   | otherwise = T.pack $ ""
+
+getRoomI :: [Text] -> Int -> Text
+getRoomI splitted i
+  | (i < length splitted) = splitted !! i
+  | otherwise = T.pack $ "101"
 
 getIWithA :: [(Int, String)] -> Int -> (Int, String)
 getIWithA splitted i
@@ -69,8 +76,8 @@ foo (y:ys) x date xlsx = do
        Just (CellText a) -> do
         let splitted = (splitOn (T.pack $ "\r\n") a)
         let day = snd (getIWithA date (getDay y))
-        let oldLecTime = LectureTime {startTime = day ++ ":" ++ (fst (getTime y)), endTime = day ++ ":" ++ (snd (getTime y))}
-        OldLecture {oldName = T.unpack $ (getI splitted 0), oldTeacher = T.unpack $ (getI splitted 1), oldRoom = T.unpack $ (getI splitted 2), oldLecTime = oldLecTime}
+        let oldLecTime = LectureTime {startTime = strToTime (day ++ ":" ++ (fst (getTime y))), endTime = strToTime (day ++ ":" ++ (snd (getTime y)))}
+        OldLecture {oldName = T.unpack $ (getI splitted 0), oldTeacher = T.unpack $ (getI splitted 1), oldRoom = T.unpack $ (getRoomI splitted 2), oldLecTime = oldLecTime}
        Just _ -> OldLecture {}
        Nothing -> OldLecture {}
 
