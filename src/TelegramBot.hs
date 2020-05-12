@@ -30,10 +30,14 @@ import           Telegram.Bot.Simple
 import           Telegram.Bot.Simple.Debug
 import           Telegram.Bot.Simple.UpdateParser
 import           Telegram.Bot.Simple.Conversation
-import           Control.Lens
+import           Control.Lens as L hiding((.=))
 
 import BotDatabase
 import Database.HDBC.Sqlite3 (Connection)
+
+import Data.Aeson
+import Data.Aeson.TH
+import qualified Data.ByteString.Lazy.Char8 as BL
 
 -- | Bot conversation state model.
 data Model =
@@ -150,6 +154,21 @@ lectureReminder model = do
           return item { lecReminder = Nothing }
         _ -> return item
 
+instance ToJSON Model where   -- decode (encode lect):: Maybe LectureTime
+  toJSON Model{..} = object [
+    "electiveCourses" .= electiveCourses,
+    "myElectiveCourses" .= myElectiveCourses,
+    "currentTime" .= T.pack (timeToStr currentTime)
+--    "timeZone" .= T.pack (timeZone),
+--    "remindLectures" .= remindLectures,
+--    "toDoDescription" .= toDoDescription
+    ]
+
+botSaver :: Model -> Eff Action Model
+botSaver model = do
+  eff $ (\text -> NoAction) <$> liftIO (dbWrite (encode model))
+  pure model
+
 -- Sets reminder on all course lectures.
 setReminderIn :: Text -> Model -> Model
 setReminderIn title model = setCourseReminderIn course model
@@ -229,9 +248,12 @@ initBot :: IO  (BotApp
 initBot = do
   model <- initialModel
   let botjobs = [BotJob {botJobSchedule =  "* * * * *" -- every minute
-                     ,  botJobTask = lectureReminder
-                     }
-                 ]
+                        ,  botJobTask = lectureReminder
+                        },
+                 BotJob {botJobSchedule =  "* * * * *" -- every minute
+                        ,  botJobTask = botSaver
+                        }
+                ]
   let someBot  = BotApp {botInitialModel = model, botAction = flip handleUpdate, botHandler = handleAction, botJobs = botjobs}
   pure (conversationBot Telegram.updateChatId  someBot)
 
@@ -359,6 +381,18 @@ reminderInlineKeyboardButton item = actionButton title (AddItem title)
   where
     title = toRemindTitle item
 
+dbWrite :: BL.ByteString -> IO(Text)
+dbWrite value = do
+  let valueToWrite = show value
+  conn <- BotDatabase.initDb
+  BotDatabase.insertToDb conn valueToWrite
+  return $ T.pack ""
+
+--replyAndNoAction :: Action
+--replyAndNoAction = do
+--  reply <- replyText "Course in your list"
+--  return NoAction
+
 -- | How to handle 'Action's.
 handleAction :: Action -> Model -> Eff Action Model
 handleAction action model =
@@ -370,6 +404,7 @@ handleAction action model =
       addCourse (copyCourse model title) model <# do
         replyText "Course in your list"
         pure NoAction
+--        (\text -> replyAndNoAction) <$> liftIO dbWrite
   -- remove course from list of user`s courses
     RemoveItem title ->
       removeCourse title model <# do
