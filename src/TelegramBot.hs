@@ -246,7 +246,7 @@ startMessage =
     , "/remove_course - remove course from list of selected courses"
     , "/remove_todo - remove todo item from list of todo items"
     , "/show_week - show courses on this week"
-    , "/todo - show your todo list"
+    , "/show_todo - show your todo list"
     ]
 
 myCoursesAsInlineKeyboard :: Model -> EditMessage
