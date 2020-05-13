@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections   #-}
 
@@ -13,7 +12,6 @@ import           Data.HashMap.Strict        (HashMap)
 import qualified Data.HashMap.Strict        as HashMap
 
 import Parser
-
 
 import           Control.Applicative              ((<|>))
 import           Control.Concurrent               (threadDelay)
@@ -42,10 +40,10 @@ data Model =
   Model
     { electiveCourses   :: [Course] --list of all elective courses
     , myElectiveCourses :: [Course] --elective courses that user will choose
-    , currentTime       :: UTCTime
-    , timeZone          :: TimeZone
-    , remindLectures    :: [ToRemindLecture]
-    , toDoDescription   :: [Text]
+    , currentTime       :: UTCTime  
+    , timeZone          :: TimeZone 
+    , remindLectures    :: [ToRemindLecture]  -- list of reminders
+    , toDoDescription   :: [Text]             -- list of todoitems for user
 --    , dbConnection      :: Connection
     }
   deriving (Show)
@@ -60,26 +58,28 @@ data ToRemindLecture = ToRemindLecture
 -- | Actions bot can perform.
 data Action
   = NoAction -- ^ Perform no action.
-  | AddItem Text -- ^ Add a new todo item.
+  | AddItem Text -- ^ Add course to course list.
   | RemoveItem Text -- ^ Remove an item by its title.
   | ShowItems -- ^ Display all items (either with a new message or by updating existing one).
-  | ShowAllCourses
+  | ShowAllCourses -- ^ Display the list of courses as inline keyboard 
   | Start -- ^ Display start message.
   | SetTime UTCTime -- ^ Update current time.
   | RevealItemActions Text -- ^ Update list of items to display item actions.
   | SetReminderIn Text -- ^ Set a reminder for an item in a given amount of minutes from now.
-  | ShowReminder Text
-  | WeekCourses
-  | ShowTime Text Text
-  | AddToDo Text
-  | ShowToDo Text
-  | ShowAllToDo
-  | RemoveToDo Text
+  | ShowReminder Text -- ^ Display the reminders  
+  | WeekCourses -- ^ Display courses that wil be in the defined week
+  | ShowTime Text Text -- ^ Display the info about lecture including time
+  | AddToDo Text  -- ^ Add todo item 
+  | ShowToDo Text -- ^ Display list of todo items in the defined course
+  | ShowAllToDo -- ^ Display list of todo items for the whole courses
+  | RemoveToDo Text -- ^ Remove todo item 
   deriving (Show, Read)
 
+-- | Load courses to our model
 loadCourses::IO [Maybe Course]
 loadCourses = Parser.runParser
 
+-- | Initializing our model
 initialModel :: IO Model
 initialModel = do
   now <- getCurrentTime
@@ -114,12 +114,13 @@ removeLecReminder title model = model { remindLectures = filter p (remindLecture
   where
     p item = toRemindTitle item /= title
 
+-- | Set Lecture reminder to reminder list
 setLecReminderIn :: Text -> Model -> Integer -> Lecture -> Model
 setLecReminderIn courseName model lec_id lecture = setReminder title (startTime $ lecTime lecture) model
     where
         title = T.intercalate " " [courseName, T.pack (show lec_id), T.pack (showLecture lecture (timeZone model))]
 
-
+-- | Set all lectures reminders to the list 
 setLecturesReminder :: Text -> Model -> [(Lecture, Integer)] -> Model
 setLecturesReminder courseName model [] = model
 setLecturesReminder courseName model (enumLecture: enumLectures) = setLecturesReminder courseName new_model enumLectures
@@ -171,43 +172,31 @@ addCourse Nothing model = model
 
 
 
---Work with ToDo
+-- | Add ToDo item
 addToDo :: Text -> Model -> Model
 addToDo item model = model
   { toDoDescription = item : toDoDescription model }
 
+-- | Remove ToDo item
 removeToDo :: Text -> Model -> Model
 removeToDo title model = model {toDoDescription = filter p (toDoDescription model)}
   where
     p item = item /= title
 
+-- | Show ToDo item for defined course
 showToDo:: Text -> Model -> Text
 showToDo title model = let list = filter (isInfixOf title) (toDoDescription model)
                         in if null list 
                           then T.pack ("There is nothing todo in " ++ (T.unpack title)) 
                           else intercalate "\n" (list) 
-  
+ 
+-- | Show all ToDo items
 showAllToDo:: Model -> Text
 showAllToDo model = let list = toDoDescription model 
                       in if null list 
                         then "There is nothing todo"
                         else intercalate "\n" (list) 
       
-
--- Do not need, but lets keep it for now
--- toDoAsInlineKeyboard :: Model -> EditMessage
--- toDoAsInlineKeyboard model =
---   case toDoDescription model of
---     [] -> "There is nothing todo"
---     items ->
---       (toEditMessage "List of todo items")
---         {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (toDoInlineKeyboard items)}
-
--- toDoInlineKeyboard :: [Text] -> Telegram.InlineKeyboardMarkup
--- toDoInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . toDoInlineKeyboardButton)
-
--- toDoInlineKeyboardButton :: Text -> Telegram.InlineKeyboardButton
--- toDoInlineKeyboardButton item = actionButton (item) (ShowToDoItem item)
 
 
 -- | Ability to remove course from user`s list
@@ -216,10 +205,11 @@ removeCourse title model = model {myElectiveCourses = filter p (myElectiveCourse
   where
     p item = (T.pack $ name item) /= title
 
-
+-- | Copy course from the model by title
 copyCourse :: Model -> Text -> Maybe Course
 copyCourse model title = (filter (compareCourses title) (electiveCourses model)) ^? element 0
 
+-- | Find course in the model
 findCourse :: Text -> Model -> Maybe Course
 findCourse title model = (filter equalsItem (myElectiveCourses model))  ^? element 0
   where
@@ -241,7 +231,7 @@ initBot = do
   pure (conversationBot Telegram.updateChatId  someBot)
 
 
-
+-- | Start message during bot launch
 startMessage :: Text
 startMessage =
   Text.unlines
@@ -254,6 +244,7 @@ startMessage =
     , "/show_todo - show your todo list"
     ]
 
+-- | Make InlineKeyboard for selected courses
 myCoursesAsInlineKeyboard :: Model -> EditMessage
 myCoursesAsInlineKeyboard model =
   case myElectiveCourses model of
@@ -261,15 +252,16 @@ myCoursesAsInlineKeyboard model =
     items ->
       (toEditMessage "Your list of selected Elective courses")
         {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (myCoursesInlineKeyboard items)}
-
+-- | Make InlineKeyboard for selected courses
 myCoursesInlineKeyboard :: [Course] -> Telegram.InlineKeyboardMarkup
 myCoursesInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . myCourseInlineKeyboardButton)
-
+-- | Make InlineKeyboard for selected courses
 myCourseInlineKeyboardButton :: Course -> Telegram.InlineKeyboardButton
 myCourseInlineKeyboardButton item = actionButton (T.pack $ title) (RevealItemActions (T.pack title))
   where
     title = name item
 
+-- | Make InlineKeyboard for all courses
 coursesAsInlineKeyboard :: Model -> EditMessage
 coursesAsInlineKeyboard model =
   case electiveCourses model of
@@ -277,15 +269,16 @@ coursesAsInlineKeyboard model =
     items ->
       (toEditMessage "List of available elective courses")
         {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (coursesInlineKeyboard items)}
-
+-- | Make InlineKeyboard for all courses
 coursesInlineKeyboard :: [Course] -> Telegram.InlineKeyboardMarkup
 coursesInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . courseInlineKeyboardButton)
-
+-- | Make InlineKeyboard for all courses
 courseInlineKeyboardButton :: Course -> Telegram.InlineKeyboardButton
 courseInlineKeyboardButton item = actionButton (T.pack title) (AddItem (T.pack title))
   where
     title = name item
 
+-- | InlineKeyboard of what user can perform with selected course
 myCourseActionsMessage :: Model -> Text -> EditMessage
 myCourseActionsMessage model title = do
   let course = copyCourse model title
@@ -294,6 +287,7 @@ myCourseActionsMessage model title = do
                         {editMessageReplyMarkup = Just $ Telegram.SomeInlineKeyboardMarkup (myCourseActionsKeyboard title)}
     Nothing -> "Nothing to show :("
 
+-- | InlineKeyboard of what user can perform with selected course
 myCourseActionsKeyboard :: Text -> Telegram.InlineKeyboardMarkup
 myCourseActionsKeyboard title = Telegram.InlineKeyboardMarkup [[btnRemindIn], [btnBack], [btnReminders], [btnToDo]]
   where
@@ -319,7 +313,7 @@ handleUpdate _ =
 
   
 
--- TODO make it not as buttons
+-- | Display reminders of selected course as InlineKeyboard
 remindersAsInlineKeyboard :: Model -> Text -> EditMessage
 remindersAsInlineKeyboard model course =
   case remindLectures model of
@@ -331,6 +325,7 @@ remindersAsInlineKeyboard model course =
             Telegram.SomeInlineKeyboardMarkup (remindersInlineKeyboard (filter (\i -> True) items)) -- (splitOn " " ( toRemindTitle i)) !! 0  == course
         }
 
+-- | Display week lectures as InlineKeyboard
 weekLecturesAsInlineKeyboard :: Model -> EditMessage
 weekLecturesAsInlineKeyboard model =
   case courses of
@@ -342,12 +337,12 @@ weekLecturesAsInlineKeyboard model =
     courses = thisWeekSchedule (day, tz) (myElectiveCourses model)
     tz = timeZone model
     day = localTimeDayFromUTC (currentTime model) tz
-
+-- | Display week lectures as InlineKeyboard
 weekLecturesInlineKeyboard :: Day-> TimeZone -> [Course] -> Telegram.InlineKeyboardMarkup
 weekLecturesInlineKeyboard day tz = Telegram.InlineKeyboardMarkup . map (pure . weekLecturesInlineKeyboardButtonTZ)
     where
         weekLecturesInlineKeyboardButtonTZ course = weekLecturesInlineKeyboardButton day tz course
-
+-- | Display week lectures as InlineKeyboard
 weekLecturesInlineKeyboardButton :: Day -> TimeZone -> Course -> Telegram.InlineKeyboardButton
 weekLecturesInlineKeyboardButton day tz item = actionButton courseName (ShowTime courseName lectureStr) 
   where
@@ -355,10 +350,10 @@ weekLecturesInlineKeyboardButton day tz item = actionButton courseName (ShowTime
     lecs = (thisWeekCourseLectures (day, tz) item)
     lectureStr = T.intercalate "\n" ( map (T.pack . showLectureInTimeZone ) $ take 1 lecs) -- TODO need fix
     showLectureInTimeZone l = showLecture l tz
-
+-- | Display reminders of selected course as InlineKeyboard
 remindersInlineKeyboard :: [ToRemindLecture] -> Telegram.InlineKeyboardMarkup
 remindersInlineKeyboard = Telegram.InlineKeyboardMarkup . map (pure . reminderInlineKeyboardButton)
-
+-- | Display reminders of selected course as InlineKeyboard
 reminderInlineKeyboardButton :: ToRemindLecture -> Telegram.InlineKeyboardButton
 reminderInlineKeyboardButton item = actionButton title (AddItem title)
   where
@@ -380,6 +375,7 @@ handleAction action model =
       removeCourse title model <# do
         replyText ("Course " <> title <> " removed from your list")
         pure ShowItems
+  -- show time of lectures
     ShowTime title time -> model <# do
       replyText (append(append title (T.pack " - "))time)
       pure NoAction
@@ -393,6 +389,7 @@ handleAction action model =
       model <# do
         replyOrEdit (coursesAsInlineKeyboard model)
         pure NoAction
+  -- show course that will be in the defined week
     WeekCourses ->
       model <# do
         replyOrEdit (weekLecturesAsInlineKeyboard model)
@@ -404,28 +401,35 @@ handleAction action model =
         pure ShowAllCourses
       eff $ SetTime <$> liftIO getCurrentTime
       pure model
+  -- show actions that can be performed with the selected course
     RevealItemActions title ->
       model <# do
         editUpdateMessage (myCourseActionsMessage model title)
         pure NoAction
+  -- set reminder to the course
     SetReminderIn title ->
       setReminderIn title model <# do
         replyText "Ok, I will remind you."
         pure NoAction
+  -- show reminders of the course
     ShowReminder title ->
       model <# do
         replyOrEdit (remindersAsInlineKeyboard model title)
         pure NoAction
+  -- add todo item 
     AddToDo title -> 
       addToDo title model <# do
         replyText "ToDo in your list"
         pure NoAction
+  -- show todo item of selected course
     ShowToDo title -> model <# do
       replyText (showToDo title model)
       pure NoAction
+  -- show all todo items 
     ShowAllToDo -> model  <# do
       replyText (showAllToDo model)
       pure NoAction
+  -- remove todo item
     RemoveToDo title ->
       removeToDo title model <# do
         replyText ("ToDo " <> title <> " removed from your list")
